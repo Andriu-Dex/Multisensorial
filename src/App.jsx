@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import styles from "./App.module.css";
 
 // 👋 Demo: Trivia Multisensorial Accesible (Visual + Auditivo + Háptico)
 // - Sin dependencias externas (usa Web Audio API + Web Speech API + Vibration API)
-// - Estilos con Tailwind (disponible por defecto en el entorno del canvas)
+// - Estilos con CSS Modules para máximo rendimiento y animaciones espectaculares
 // - Accesible: aria-live, foco visible, alto contraste, no depende solo del color
 // - Respeta preferencias del usuario: switches para Sonido / Vibración / Voz
 // - Respeta preferencias del sistema: reduced motion
@@ -188,12 +189,15 @@ export default function App() {
   const finished = index === QUESTIONS.length - 1 && selected !== null;
 
   return (
-    <div className="container">
-      <div className="main-content">
+    <div className={styles.container}>
+      <div className={styles.wrapper}>
         {/* Header */}
-        <header className="header">
-          <h1 className="title">Trivia Multisensorial Accesible</h1>
-          <div className="controls" aria-label="Preferencias de estímulos">
+        <header className={styles.header}>
+          <h1 className={styles.title}>Trivia Multisensorial Accesible</h1>
+          <div
+            className={styles.preferences}
+            aria-label="Preferencias de estímulos"
+          >
             <ToggleSwitch
               label="Sonido"
               checked={soundOn}
@@ -209,24 +213,24 @@ export default function App() {
         </header>
 
         {/* Progreso */}
-        <div className="progress-bar">
-          <span>
+        <div className={styles.progress}>
+          <span className={styles.progressText}>
             Pregunta {index + 1} de {QUESTIONS.length}
           </span>
-          <span>
-            Puntaje: <span className="score">{score}</span>
+          <span className={styles.progressText}>
+            Puntaje: <span className={styles.score}>{score}</span>
           </span>
         </div>
 
         {/* Área principal */}
-        <main className="card">
+        <main className={styles.mainCard}>
           {/* Pregunta con aria-live */}
-          <div aria-live="polite">
-            <h2 className="question">{q.q}</h2>
+          <div aria-live="polite" className={styles.questionContainer}>
+            <h2 className={`${styles.question} ${styles.completed}`}>{q.q}</h2>
           </div>
 
           {/* Opciones */}
-          <div className="options-grid">
+          <div className={styles.optionsGrid}>
             {q.options.map((opt, i) => {
               const state =
                 selected === null
@@ -249,7 +253,7 @@ export default function App() {
           </div>
 
           {/* Resultado con aria-live */}
-          <div aria-live="assertive" style={{ minHeight: "2.5rem" }}>
+          <div aria-live="assertive" className={styles.statusContainer}>
             {showResult === "ok" && (
               <StatusBanner
                 type="ok"
@@ -267,19 +271,20 @@ export default function App() {
           </div>
 
           {/* Controles de navegación */}
-          <div className="nav-controls">
+          <div className={styles.controls}>
             {!finished ? (
               <button
-                className={`btn ${
-                  selected !== null ? "btn-secondary" : "btn-secondary"
-                }`}
+                className={`${styles.navButton} ${styles.nextButton}`}
                 onClick={next}
                 disabled={selected === null}
               >
                 Siguiente
               </button>
             ) : (
-              <button className="btn btn-primary" onClick={restart}>
+              <button
+                className={`${styles.navButton} ${styles.restartButton}`}
+                onClick={restart}
+              >
                 Reiniciar
               </button>
             )}
@@ -287,12 +292,13 @@ export default function App() {
         </main>
 
         {/* Nota de accesibilidad */}
-        <p className="accessibility-note">
-          Consejo: activa/desactiva <span className="highlight">Sonido</span>,{" "}
-          <span className="highlight">Vibración</span> y{" "}
-          <span className="highlight">Voz</span> para mostrar cómo se evita la
-          sobrecarga sensorial y cómo se refuerza la accesibilidad. Esta demo no
-          depende solo del color: utiliza iconos, texto y feedback
+        <p className={styles.accessibilityNote}>
+          Consejo: activa/desactiva{" "}
+          <span className={styles.highlight}>Sonido</span>,{" "}
+          <span className={styles.highlight}>Vibración</span> y{" "}
+          <span className={styles.highlight}>Voz</span> para mostrar cómo se
+          evita la sobrecarga sensorial y cómo se refuerza la accesibilidad.
+          Esta demo no depende solo del color: utiliza iconos, texto y feedback
           multisensorial.
         </p>
       </div>
@@ -305,16 +311,22 @@ export default function App() {
 // =====================
 function ToggleSwitch({ label, checked, onChange }) {
   return (
-    <label className="toggle-wrapper">
-      <span className="toggle-label">{label}</span>
+    <label className={styles.toggleLabel}>
+      <span>{label}</span>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={`toggle-switch ${checked ? "on" : "off"}`}
+        className={`${styles.toggleSwitch} ${
+          checked ? styles.active : styles.inactive
+        }`}
       >
-        <span className={`toggle-thumb ${checked ? "on" : "off"}`} />
+        <span
+          className={`${styles.toggleKnob} ${
+            checked ? styles.active : styles.inactive
+          }`}
+        />
       </button>
     </label>
   );
@@ -329,18 +341,14 @@ function OptionButton({ text, onClick, disabled, state }) {
 
   return (
     <button
-      className={`option-button ${state}`}
+      className={`${styles.optionButton} ${styles[state]}`}
       onClick={onClick}
       disabled={disabled}
       aria-disabled={disabled}
     >
-      <div className="option-icon">
-        {state !== "idle" ? (
-          <span aria-hidden>{icon}</span>
-        ) : (
-          <span aria-hidden />
-        )}
-      </div>
+      <span className={styles.optionIcon} aria-hidden>
+        {icon}
+      </span>
       <span>{text}</span>
     </button>
   );
@@ -351,11 +359,13 @@ function StatusBanner({ type, text, reducedMotion }) {
 
   return (
     <div
-      className={`status-banner ${type === "ok" ? "success" : "error"} ${
-        reducedMotion ? "" : "animate"
+      className={`${styles.statusBanner} ${
+        type === "ok" ? styles.success : styles.error
       }`}
     >
-      <span aria-hidden>{icon}</span>
+      <span className={styles.statusIcon} aria-hidden>
+        {icon}
+      </span>
       <span>{text}</span>
     </div>
   );
