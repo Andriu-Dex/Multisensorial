@@ -126,6 +126,7 @@ export default function App() {
   const [soundOn, setSoundOn] = useState(true);
   const [vibrationOn, setVibrationOn] = useState(true);
   const [voiceOn, setVoiceOn] = useState(false);
+  const [reducedMode, setReducedMode] = useState(false);
 
   const { success, error } = useAudioEngine();
 
@@ -135,6 +136,29 @@ export default function App() {
     typeof window !== "undefined" &&
     window.matchMedia &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // Aplicar/remover clase del modo reducido al document
+  useEffect(() => {
+    console.log("Modo reducido cambiado:", reducedMode); // Debug
+
+    if (reducedMode) {
+      document.documentElement.classList.add("reducedMode");
+      document.body.classList.add("reducedMode");
+      console.log("Clases añadidas al DOM");
+      console.log("Html classes:", document.documentElement.className);
+      console.log("Body classes:", document.body.className);
+    } else {
+      document.documentElement.classList.remove("reducedMode");
+      document.body.classList.remove("reducedMode");
+      console.log("Clases removidas del DOM");
+    }
+
+    // Cleanup al desmontar
+    return () => {
+      document.documentElement.classList.remove("reducedMode");
+      document.body.classList.remove("reducedMode");
+    };
+  }, [reducedMode]);
 
   // Anunciar pregunta por voz y en aria-live
   useEffect(() => {
@@ -189,11 +213,39 @@ export default function App() {
   const finished = index === QUESTIONS.length - 1 && selected !== null;
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${reducedMode ? "reducedMode" : ""}`}>
+      {/* Switch de Modo Reducido */}
+      <div className={styles.reducedModeSwitch}>
+        <span className={styles.reducedModeIcon}>
+          {reducedMode ? "🔅" : "✨"}
+        </span>
+        <ToggleSwitch
+          label={reducedMode ? "Modo Suave" : "Modo Vibrante"}
+          checked={reducedMode}
+          onChange={setReducedMode}
+        />
+      </div>
+
       <div className={styles.wrapper}>
         {/* Header */}
         <header className={styles.header}>
-          <h1 className={styles.title}>Trivia Multisensorial Accesible</h1>
+          <h1
+            className={styles.title}
+            style={
+              reducedMode
+                ? {
+                    color: "#ff6b6b",
+                    background: "rgba(255, 107, 107, 0.1)",
+                    padding: "0.5rem",
+                    borderRadius: "0.5rem",
+                    border: "2px solid #ff6b6b",
+                  }
+                : {}
+            }
+          >
+            Trivia Multisensorial Accesible
+            {reducedMode}
+          </h1>
           <div
             className={styles.preferences}
             aria-label="Preferencias de estímulos"
@@ -310,6 +362,11 @@ export default function App() {
 // Subcomponentes
 // =====================
 function ToggleSwitch({ label, checked, onChange }) {
+  const handleClick = () => {
+    console.log(`Toggle ${label}: ${checked} -> ${!checked}`);
+    onChange(!checked);
+  };
+
   return (
     <label className={styles.toggleLabel}>
       <span>{label}</span>
@@ -317,7 +374,7 @@ function ToggleSwitch({ label, checked, onChange }) {
         type="button"
         role="switch"
         aria-checked={checked}
-        onClick={() => onChange(!checked)}
+        onClick={handleClick}
         className={`${styles.toggleSwitch} ${
           checked ? styles.active : styles.inactive
         }`}

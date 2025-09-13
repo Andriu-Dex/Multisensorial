@@ -13,6 +13,19 @@
   --glass-border: rgba(255, 255, 255, 0.2);
 }
 
+/* Variables para modo reducido/suave (fotosensibilidad) */
+:root.reducedMode {
+  --primary-bg: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+  --accent-purple: #6b5b95;
+  --accent-cyan: #4a90a4;
+  --accent-pink: #8e6a5b;
+  --accent-orange: #a67c52;
+  --success-color: #5a8a5a;
+  --error-color: #a85a5a;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
 /* Animaciones espectaculares */
 @keyframes pulseGlow {
   0%,
@@ -603,4 +616,164 @@
   font-size: 1.5rem;
   animation: float 4s ease-in-out infinite;
   opacity: 0.6;
+}
+
+/* ================================================ */
+/* MODO REDUCIDO - Para personas fotosensibles */
+/* ================================================ */
+
+/* Desactivar todas las animaciones en modo reducido */
+:root.reducedMode *,
+:root.reducedMode *::before,
+:root.reducedMode *::after,
+.reducedMode *,
+.reducedMode *::before,
+.reducedMode *::after {
+  animation: none !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+/* Estilos simplificados para el container en modo reducido */
+:root.reducedMode .container,
+.reducedMode {
+  background: #1a1a1a !important;
+  animation: none !important;
+}
+
+:root.reducedMode .container::after,
+.reducedMode::after {
+  display: none !important;
+}
+
+/* Tarjeta principal simplificada */
+:root.reducedMode .card,
+.reducedMode .card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  animation: none !important;
+}
+
+/* Botones simplificados */
+:root.reducedMode .optionButton,
+.reducedMode .optionButton {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  animation: none !important;
+}
+
+:root.reducedMode .optionButton:hover,
+.reducedMode .optionButton:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  transform: none !important;
+}
+
+:root.reducedMode .optionButton.correct,
+.reducedMode .optionButton.correct {
+  background: rgba(90, 138, 90, 0.2) !important;
+  border-color: #5a8a5a !important;
+  animation: none !important;
+}
+
+:root.reducedMode .optionButton.wrong,
+.reducedMode .optionButton.wrong {
+  background: rgba(168, 90, 90, 0.2) !important;
+  border-color: #a85a5a !important;
+  animation: none !important;
+}
+
+/* Banner de estado simplificado */
+:root.reducedMode .statusBanner,
+.reducedMode .statusBanner {
+  animation: none !important;
+}
+
+:root.reducedMode .statusBanner.success,
+.reducedMode .statusBanner.success {
+  background: rgba(90, 138, 90, 0.15) !important;
+  border-color: #5a8a5a !important;
+}
+
+:root.reducedMode .statusBanner.error,
+.reducedMode .statusBanner.error {
+  background: rgba(168, 90, 90, 0.15) !important;
+  border-color: #a85a5a !important;
+}
+
+/* Switches simplificados */
+:root.reducedMode .toggleSwitch.active,
+.reducedMode .toggleSwitch.active {
+  background: #6b5b95 !important;
+  box-shadow: none !important;
+}
+
+:root.reducedMode .toggleKnob,
+.reducedMode .toggleKnob {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Regla de prueba visible - Cambiar color del título */
+:global(.reducedMode) .title {
+  color: #ff6b6b !important;
+  background: rgba(255, 107, 107, 0.1) !important;
+  padding: 0.5rem !important;
+  border-radius: 0.5rem !important;
+}
+
+/* Modo reducido global - aplicado al body o html */
+:global(body.reducedMode) .container {
+  background: #1a1a1a !important;
+}
+
+:global(body.reducedMode) * {
+  animation: none !important;
+  transition: opacity 0.2s ease !important;
+}
+
+/* También para cuando se aplica al contenedor directamente */
+.container:global(.reducedMode) {
+  background: #1a1a1a !important;
+}
+
+.container:global(.reducedMode) * {
+  animation: none !important;
+  transition: opacity 0.2s ease !important;
+}
+
+.container:global(.reducedMode) .title {
+  color: #ff6b6b !important;
+  background: rgba(255, 107, 107, 0.1) !important;
+  padding: 0.5rem !important;
+  border-radius: 0.5rem !important;
+}
+
+:root.reducedMode .toggleKnob {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Switch de modo reducido */
+.reducedModeSwitch {
+  position: fixed;
+  top: 1rem;
+  left: 1rem;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 0.75rem;
+  color: white;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+}
+
+.reducedModeSwitch:hover {
+  background: rgba(0, 0, 0, 0.9);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.reducedModeIcon {
+  font-size: 1rem;
 }
