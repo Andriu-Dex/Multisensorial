@@ -15,15 +15,20 @@
 
 /* Variables para modo reducido/suave (fotosensibilidad) */
 :root.reducedMode {
-  --primary-bg: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-  --accent-purple: #6b5b95;
-  --accent-cyan: #4a90a4;
-  --accent-pink: #8e6a5b;
-  --accent-orange: #a67c52;
-  --success-color: #5a8a5a;
-  --error-color: #a85a5a;
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --primary-bg: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  --accent-purple: #7f8c8d;
+  --accent-cyan: #95a5a6;
+  --accent-pink: #bdc3c7;
+  --accent-orange: #e67e22;
+  --success-color: #27ae60;
+  --error-color: #e74c3c;
+  --glass-bg: rgba(236, 240, 241, 0.08);
+  --glass-border: rgba(189, 195, 199, 0.2);
+  --text-primary: #ecf0f1;
+  --text-secondary: #bdc3c7;
+  --card-bg: #34495e;
+  --button-bg: #7f8c8d;
+  --button-hover: #95a5a6;
 }
 
 /* Animaciones espectaculares */
@@ -619,66 +624,170 @@
 }
 
 /* ================================================ */
-/* MODO REDUCIDO - Para personas fotosensibles */
+/* MODO SUAVE - Interfaz completamente diferente */
 /* ================================================ */
 
-/* Desactivar todas las animaciones en modo reducido */
-:root.reducedMode *,
-:root.reducedMode *::before,
-:root.reducedMode *::after,
-.reducedMode *,
-.reducedMode *::before,
-.reducedMode *::after {
+/* Desactivar todas las animaciones */
+:global(.reducedMode) *,
+:global(.reducedMode) *::before,
+:global(.reducedMode) *::after,
+.container:global(.reducedMode) *,
+.container:global(.reducedMode) *::before,
+.container:global(.reducedMode) *::after {
   animation: none !important;
-  transition: opacity 0.2s ease, transform 0.2s ease !important;
+  transition: all 0.2s ease !important;
 }
 
-/* Estilos simplificados para el container en modo reducido */
-:root.reducedMode .container,
-.reducedMode {
-  background: #1a1a1a !important;
-  animation: none !important;
+/* CONTENEDOR PRINCIPAL - Tema tierra/naturaleza */
+:global(body.reducedMode) .container,
+.container:global(.reducedMode) {
+  background: linear-gradient(
+    135deg,
+    #2c3e50 0%,
+    #34495e 50%,
+    #2c3e50 100%
+  ) !important;
+  min-height: 100vh !important;
+  font-family: "Georgia", "Times New Roman", serif !important;
 }
 
-:root.reducedMode .container::after,
-.reducedMode::after {
+:global(body.reducedMode) .container::after,
+.container:global(.reducedMode)::after {
   display: none !important;
 }
 
-/* Tarjeta principal simplificada */
-:root.reducedMode .card,
-.reducedMode .card {
-  background: rgba(255, 255, 255, 0.05) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-  animation: none !important;
+/* WRAPPER - Estilo minimalista */
+:global(.reducedMode) .wrapper,
+.container:global(.reducedMode) .wrapper {
+  max-width: 700px !important;
+  background: rgba(52, 73, 94, 0.9) !important;
+  backdrop-filter: none !important;
+  border: 2px solid #7f8c8d !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  padding: 2rem !important;
 }
 
-/* Botones simplificados */
+/* HEADER - Estilo sobrio */
+:global(.reducedMode) .header,
+.container:global(.reducedMode) .header {
+  background: rgba(127, 140, 141, 0.1) !important;
+  border-radius: 12px !important;
+  padding: 1.5rem !important;
+  margin-bottom: 2rem !important;
+  border-left: 4px solid #e67e22 !important;
+}
+
+/* TÍTULO - Tipografía elegante */
+:global(.reducedMode) .title,
+.container:global(.reducedMode) .title {
+  color: #ecf0f1 !important;
+  font-size: 1.8rem !important;
+  font-weight: 600 !important;
+  text-align: center !important;
+  margin: 0 !important;
+  letter-spacing: 0.5px !important;
+  line-height: 1.3 !important;
+  background: none !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+/* PREFERENCIAS - Diseño horizontal simple */
+:global(.reducedMode) .preferences,
+.container:global(.reducedMode) .preferences {
+  background: rgba(189, 195, 199, 0.1) !important;
+  border-radius: 8px !important;
+  padding: 1rem !important;
+  border: 1px solid rgba(127, 140, 141, 0.3) !important;
+}
+
+/* PROGRESO - Estilo minimalista */
+:global(.reducedMode) .progress,
+.container:global(.reducedMode) .progress {
+  background: rgba(52, 73, 94, 0.6) !important;
+  border-radius: 8px !important;
+  padding: 0.75rem 1rem !important;
+  border: 1px solid #7f8c8d !important;
+  color: #bdc3c7 !important;
+  font-size: 0.9rem !important;
+}
+
+/* TARJETA PRINCIPAL - Diseño tipo papel */
+:global(.reducedMode) .card,
+.container:global(.reducedMode) .card {
+  background: linear-gradient(145deg, #34495e, #2c3e50) !important;
+  border: 2px solid #7f8c8d !important;
+  border-radius: 12px !important;
+  padding: 2rem !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1), 0 4px 16px rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: none !important;
+}
+
+/* PREGUNTA - Tipografía legible */
+:global(.reducedMode) .question,
+.container:global(.reducedMode) .question {
+  color: #ecf0f1 !important;
+  font-size: 1.3rem !important;
+  font-weight: 500 !important;
+  line-height: 1.5 !important;
+  margin-bottom: 1.5rem !important;
+  padding: 1rem !important;
+  background: rgba(236, 240, 241, 0.05) !important;
+  border-radius: 8px !important;
+  border-left: 4px solid #e67e22 !important;
+}
+
+/* BOTONES - Estilo tipo papel con relieve */
 :root.reducedMode .optionButton,
-.reducedMode .optionButton {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+.reducedMode .optionButton,
+:global(.reducedMode) .optionButton,
+.container:global(.reducedMode) .optionButton {
+  background: linear-gradient(145deg, #7f8c8d, #95a5a6) !important;
+  border: 2px solid #bdc3c7 !important;
+  border-radius: 8px !important;
+  color: #2c3e50 !important;
+  font-weight: 600 !important;
+  padding: 1rem 1.5rem !important;
+  margin: 0.5rem 0 !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2) !important;
   animation: none !important;
+  transition: all 0.2s ease !important;
+  font-size: 1rem !important;
 }
 
 :root.reducedMode .optionButton:hover,
-.reducedMode .optionButton:hover {
-  background: rgba(255, 255, 255, 0.12) !important;
-  transform: none !important;
+.reducedMode .optionButton:hover,
+:global(.reducedMode) .optionButton:hover,
+.container:global(.reducedMode) .optionButton:hover {
+  background: linear-gradient(145deg, #95a5a6, #bdc3c7) !important;
+  border-color: #ecf0f1 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
 }
 
+/* Estado CORRECTO - Verde natural */
 :root.reducedMode .optionButton.correct,
-.reducedMode .optionButton.correct {
-  background: rgba(90, 138, 90, 0.2) !important;
-  border-color: #5a8a5a !important;
+.reducedMode .optionButton.correct,
+:global(.reducedMode) .optionButton.correct,
+.container:global(.reducedMode) .optionButton.correct {
+  background: linear-gradient(145deg, #27ae60, #2ecc71) !important;
+  border-color: #27ae60 !important;
+  color: white !important;
   animation: none !important;
+  box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3) !important;
 }
 
+/* Estado INCORRECTO - Rojo terracota */
 :root.reducedMode .optionButton.wrong,
-.reducedMode .optionButton.wrong {
-  background: rgba(168, 90, 90, 0.2) !important;
-  border-color: #a85a5a !important;
+.reducedMode .optionButton.wrong,
+:global(.reducedMode) .optionButton.wrong,
+.container:global(.reducedMode) .optionButton.wrong {
+  background: linear-gradient(145deg, #e74c3c, #c0392b) !important;
+  border-color: #e74c3c !important;
+  color: white !important;
   animation: none !important;
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3) !important;
 }
 
 /* Banner de estado simplificado */
@@ -687,28 +796,93 @@
   animation: none !important;
 }
 
+/* BANNERS DE ESTADO - Estilo minimalista */
+:root.reducedMode .statusBanner,
+.reducedMode .statusBanner,
+:global(.reducedMode) .statusBanner,
+.container:global(.reducedMode) .statusBanner {
+  border-radius: 8px !important;
+  padding: 1rem 1.5rem !important;
+  font-weight: 600 !important;
+  font-size: 1rem !important;
+  animation: none !important;
+  border: 2px solid !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
 :root.reducedMode .statusBanner.success,
-.reducedMode .statusBanner.success {
-  background: rgba(90, 138, 90, 0.15) !important;
-  border-color: #5a8a5a !important;
+.reducedMode .statusBanner.success,
+:global(.reducedMode) .statusBanner.success,
+.container:global(.reducedMode) .statusBanner.success {
+  background: linear-gradient(145deg, #27ae60, #2ecc71) !important;
+  border-color: #27ae60 !important;
+  color: white !important;
 }
 
 :root.reducedMode .statusBanner.error,
-.reducedMode .statusBanner.error {
-  background: rgba(168, 90, 90, 0.15) !important;
-  border-color: #a85a5a !important;
+.reducedMode .statusBanner.error,
+:global(.reducedMode) .statusBanner.error,
+.container:global(.reducedMode) .statusBanner.error {
+  background: linear-gradient(145deg, #e74c3c, #c0392b) !important;
+  border-color: #e74c3c !important;
+  color: white !important;
 }
 
-/* Switches simplificados */
+/* SWITCHES - Estilo tierra/naturaleza */
+:root.reducedMode .toggleSwitch,
+.reducedMode .toggleSwitch,
+:global(.reducedMode) .toggleSwitch,
+.container:global(.reducedMode) .toggleSwitch {
+  background: rgba(127, 140, 141, 0.4) !important;
+  border: 1px solid #7f8c8d !important;
+}
+
 :root.reducedMode .toggleSwitch.active,
-.reducedMode .toggleSwitch.active {
-  background: #6b5b95 !important;
-  box-shadow: none !important;
+.reducedMode .toggleSwitch.active,
+:global(.reducedMode) .toggleSwitch.active,
+.container:global(.reducedMode) .toggleSwitch.active {
+  background: linear-gradient(135deg, #e67e22, #d35400) !important;
+  box-shadow: 0 2px 8px rgba(230, 126, 34, 0.3) !important;
+  border-color: #e67e22 !important;
 }
 
 :root.reducedMode .toggleKnob,
-.reducedMode .toggleKnob {
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+.reducedMode .toggleKnob,
+:global(.reducedMode) .toggleKnob,
+.container:global(.reducedMode) .toggleKnob {
+  background: #ecf0f1 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* BOTONES DE NAVEGACIÓN */
+:global(.reducedMode) .navigationButton,
+.container:global(.reducedMode) .navigationButton {
+  background: linear-gradient(145deg, #e67e22, #d35400) !important;
+  border: 2px solid #e67e22 !important;
+  color: white !important;
+  border-radius: 8px !important;
+  padding: 0.75rem 1.5rem !important;
+  font-weight: 600 !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+:global(.reducedMode) .navigationButton:hover,
+.container:global(.reducedMode) .navigationButton:hover {
+  background: linear-gradient(145deg, #d35400, #e67e22) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* NOTA DE ACCESIBILIDAD */
+:global(.reducedMode) .accessibilityNote,
+.container:global(.reducedMode) .accessibilityNote {
+  background: rgba(52, 73, 94, 0.6) !important;
+  border: 1px solid #7f8c8d !important;
+  border-radius: 8px !important;
+  color: #bdc3c7 !important;
+  padding: 1rem !important;
+  font-size: 0.85rem !important;
+  line-height: 1.5 !important;
 }
 
 /* Regla de prueba visible - Cambiar color del título */
@@ -740,8 +914,8 @@
 }
 
 .container:global(.reducedMode) .title {
-  color: #ff6b6b !important;
-  background: rgba(255, 107, 107, 0.1) !important;
+  color: #f0f0f0 !important;
+  background: rgba(117, 107, 255, 0.1) !important;
   padding: 0.5rem !important;
   border-radius: 0.5rem !important;
 }

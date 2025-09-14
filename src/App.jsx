@@ -229,20 +229,7 @@ export default function App() {
       <div className={styles.wrapper}>
         {/* Header */}
         <header className={styles.header}>
-          <h1
-            className={styles.title}
-            style={
-              reducedMode
-                ? {
-                    color: "#ff6b6b",
-                    background: "rgba(255, 107, 107, 0.1)",
-                    padding: "0.5rem",
-                    borderRadius: "0.5rem",
-                    border: "2px solid #ff6b6b",
-                  }
-                : {}
-            }
-          >
+          <h1 className={styles.title}>
             Trivia Multisensorial Accesible
             {reducedMode}
           </h1>
