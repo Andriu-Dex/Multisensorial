@@ -214,6 +214,22 @@ export default function App() {
 
   return (
     <div className={`${styles.container} ${reducedMode ? "reducedMode" : ""}`}>
+      {/* Figuras 3D animadas de fondo - Solo en modo vibrante */}
+      {!reducedMode && (
+        <div className={styles.shapes3D}>
+          <div className={`${styles.shape3D} ${styles.cube3D}`}></div>
+          <div className={`${styles.shape3D} ${styles.sphere3D}`}></div>
+          <div className={`${styles.shape3D} ${styles.pyramid3D}`}></div>
+          <div className={`${styles.shape3D} ${styles.diamond3D}`}></div>
+          <div className={`${styles.shape3D} ${styles.hexagon3D}`}></div>
+          <div className={`${styles.shape3D} ${styles.cylinder3D}`}></div>
+          <div className={`${styles.shape3D} ${styles.star3D}`}></div>
+          <div className={`${styles.shape3D} ${styles.smallShape1}`}></div>
+          <div className={`${styles.shape3D} ${styles.smallShape2}`}></div>
+          <div className={`${styles.shape3D} ${styles.smallShape3}`}></div>
+        </div>
+      )}
+
       {/* Switch de Modo Reducido */}
       <div className={styles.reducedModeSwitch}>
         <span className={styles.reducedModeIcon}>
