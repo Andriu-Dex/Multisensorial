@@ -623,12 +623,101 @@ export default function App() {
                 Siguiente
               </button>
             ) : (
-              <button
-                className={`${styles.navButton} ${styles.restartButton}`}
-                onClick={restart}
-              >
-                Reiniciar
-              </button>
+              // Pantalla de resultados finales
+              <div className={styles.finalResults}>
+                {/* Efecto de confeti solo en modo vibrante */}
+                {!reducedMode && (
+                  <div className={styles.confetti}>
+                    {[...Array(50)].map((_, i) => (
+                      <div
+                        key={i}
+                        className={`${styles.confettiPiece} ${
+                          styles[`confetti${(i % 6) + 1}`]
+                        }`}
+                        style={{
+                          left: `${Math.random() * 100}%`,
+                          animationDelay: `${Math.random() * 3}s`,
+                          animationDuration: `${3 + Math.random() * 2}s`,
+                        }}
+                      ></div>
+                    ))}
+                  </div>
+                )}
+
+                <div className={styles.resultsCard}>
+                  <h2 className={styles.finalTitle}>¡Trivia Completada! 🎉</h2>
+
+                  <div className={styles.scoreBreakdown}>
+                    <div className={styles.scoreItem}>
+                      <span className={styles.scoreLabel}>
+                        Respuestas Correctas:
+                      </span>
+                      <span
+                        className={`${styles.scoreValue} ${styles.correct}`}
+                      >
+                        {score}
+                      </span>
+                    </div>
+                    <div className={styles.scoreItem}>
+                      <span className={styles.scoreLabel}>
+                        Respuestas Incorrectas:
+                      </span>
+                      <span
+                        className={`${styles.scoreValue} ${styles.incorrect}`}
+                      >
+                        {QUESTIONS.length - score}
+                      </span>
+                    </div>
+                    <div className={styles.scoreDivider}></div>
+                    <div className={styles.scoreItem}>
+                      <span className={styles.scoreLabel}>
+                        Total de Preguntas:
+                      </span>
+                      <span className={styles.scoreValue}>
+                        {QUESTIONS.length}
+                      </span>
+                    </div>
+                    <div className={styles.scoreItem}>
+                      <span className={styles.scoreLabel}>
+                        Porcentaje de Aciertos:
+                      </span>
+                      <span
+                        className={`${styles.scoreValue} ${styles.percentage}`}
+                      >
+                        {Math.round((score / QUESTIONS.length) * 100)}%
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className={styles.performanceMessage}>
+                    {score === QUESTIONS.length ? (
+                      <p className={styles.perfectScore}>
+                        ¡Perfecto! 🌟 Respondiste todas las preguntas
+                        correctamente.
+                      </p>
+                    ) : score >= QUESTIONS.length * 0.8 ? (
+                      <p className={styles.excellentScore}>
+                        ¡Excelente trabajo! 👏 Tienes un gran conocimiento.
+                      </p>
+                    ) : score >= QUESTIONS.length * 0.6 ? (
+                      <p className={styles.goodScore}>
+                        ¡Buen trabajo! 👍 Sigue practicando para mejorar.
+                      </p>
+                    ) : (
+                      <p className={styles.needsImprovement}>
+                        ¡Sigue intentando! 💪 La práctica hace al maestro.
+                      </p>
+                    )}
+                  </div>
+
+                  <button
+                    className={`${styles.navButton} ${styles.restartButton}`}
+                    onClick={restart}
+                  >
+                    Reiniciar Trivia
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </main>
