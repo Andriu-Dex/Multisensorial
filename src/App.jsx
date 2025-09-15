@@ -153,6 +153,10 @@ function useVoiceRecognition() {
     }
   };
 
+  const clearTranscript = () => {
+    setTranscript("");
+  };
+
   const parseVoiceCommand = (text) => {
     const cleanText = text.toLowerCase().trim();
 
@@ -219,6 +223,7 @@ function useVoiceRecognition() {
     isSupported,
     startListening,
     stopListening,
+    clearTranscript,
     parseVoiceCommand,
   };
 }
@@ -434,7 +439,17 @@ export default function App() {
   };
 
   const next = () => {
-    if (index < QUESTIONS.length - 1) setIndex((i) => i + 1);
+    if (index < QUESTIONS.length - 1) {
+      setIndex((i) => i + 1);
+      // Limpiar todos los estados al avanzar a la siguiente pregunta
+      setSelected(null);
+      setShowResult(null);
+      setPendingVoiceCommand(null);
+      setShowVoiceConfirmation(false);
+      // Limpiar el transcript de voz y detener reconocimiento
+      voiceRecognition.stopListening();
+      voiceRecognition.clearTranscript();
+    }
   };
 
   const restart = () => {
@@ -442,6 +457,12 @@ export default function App() {
     setScore(0);
     setSelected(null);
     setShowResult(null);
+    // Limpiar estados de voz al reiniciar
+    setPendingVoiceCommand(null);
+    setShowVoiceConfirmation(false);
+    // Limpiar el transcript de voz y detener reconocimiento
+    voiceRecognition.stopListening();
+    voiceRecognition.clearTranscript();
   };
 
   const finished = index === QUESTIONS.length - 1 && selected !== null;
@@ -560,10 +581,11 @@ export default function App() {
                   : i === selected
                   ? "wrong"
                   : "idle";
+              const optionLetter = ["a)", "b)", "c)", "d)"][i];
               return (
                 <OptionButton
                   key={i}
-                  text={opt}
+                  text={`${optionLetter} ${opt}`}
                   onClick={() => handleAnswer(i)}
                   disabled={selected !== null}
                   state={state}
