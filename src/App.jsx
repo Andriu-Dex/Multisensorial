@@ -69,6 +69,161 @@ function speak(text) {
 }
 
 // =====================
+// Utilidades de Reconocimiento de Voz
+// =====================
+function useVoiceRecognition() {
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [isSupported, setIsSupported] = useState(false);
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+    // Verificar soporte para Web Speech API
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      setIsSupported(true);
+      const recognition = new SpeechRecognition();
+
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = "es-ES";
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        console.log("🎤 Reconocimiento de voz iniciado");
+        setIsListening(true);
+        setTranscript("");
+      };
+
+      recognition.onresult = (event) => {
+        let finalTranscript = "";
+        let interimTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcriptPart = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcriptPart;
+          } else {
+            interimTranscript += transcriptPart;
+          }
+        }
+
+        setTranscript(finalTranscript || interimTranscript);
+        console.log("🎤 Detectado:", finalTranscript || interimTranscript);
+      };
+
+      recognition.onerror = (event) => {
+        console.error("❌ Error en reconocimiento de voz:", event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        console.log("🎤 Reconocimiento de voz terminado");
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+    } else {
+      console.warn("⚠️ Web Speech API no soportada en este navegador");
+      setIsSupported(false);
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, []);
+
+  const startListening = () => {
+    if (recognitionRef.current && !isListening) {
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error("Error al iniciar reconocimiento:", error);
+      }
+    }
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current && isListening) {
+      recognitionRef.current.stop();
+    }
+  };
+
+  const parseVoiceCommand = (text) => {
+    const cleanText = text.toLowerCase().trim();
+
+    // Mapear comandos de voz a opciones
+    const commandMap = {
+      // Opción A
+      "opción a": 0,
+      a: 0,
+      primera: 0,
+      "primera opción": 0,
+      uno: 0,
+      // Opción B
+      "opción b": 1,
+      b: 1,
+      segunda: 1,
+      "segunda opción": 1,
+      dos: 1,
+      // Opción C
+      "opción c": 2,
+      c: 2,
+      tercera: 2,
+      "tercera opción": 2,
+      tres: 2,
+      // Opción D
+      "opción d": 3,
+      d: 3,
+      cuarta: 3,
+      "cuarta opción": 3,
+      cuatro: 3,
+      // Comandos especiales
+      repetir: "repeat",
+      "repetir pregunta": "repeat",
+      "lee otra vez": "repeat",
+      siguiente: "next",
+      continuar: "next",
+      sí: "confirm",
+      confirmar: "confirm",
+      no: "cancel",
+      cancelar: "cancel",
+    };
+
+    // Buscar coincidencia exacta
+    if (commandMap.hasOwnProperty(cleanText)) {
+      return {
+        command: commandMap[cleanText],
+        confidence: "high",
+        original: text,
+      };
+    }
+
+    // Buscar coincidencia parcial
+    for (const [key, value] of Object.entries(commandMap)) {
+      if (cleanText.includes(key)) {
+        return { command: value, confidence: "medium", original: text };
+      }
+    }
+
+    return { command: null, confidence: "none", original: text };
+  };
+
+  return {
+    isListening,
+    transcript,
+    isSupported,
+    startListening,
+    stopListening,
+    parseVoiceCommand,
+  };
+}
+
+// =====================
 // Preguntas de ejemplo
 // =====================
 const QUESTIONS = [
@@ -126,9 +281,15 @@ export default function App() {
   const [soundOn, setSoundOn] = useState(true);
   const [vibrationOn, setVibrationOn] = useState(true);
   const [voiceOn, setVoiceOn] = useState(false);
+  const [voiceInputOn, setVoiceInputOn] = useState(false);
   const [reducedMode, setReducedMode] = useState(false);
 
+  // Estados para reconocimiento de voz
+  const [pendingVoiceCommand, setPendingVoiceCommand] = useState(null);
+  const [showVoiceConfirmation, setShowVoiceConfirmation] = useState(false);
+
   const { success, error } = useAudioEngine();
+  const voiceRecognition = useVoiceRecognition();
 
   const q = useMemo(() => QUESTIONS[index], [index]);
 
@@ -168,6 +329,79 @@ export default function App() {
       );
     }
   }, [q, index, voiceOn]);
+
+  // Procesar comandos de voz
+  useEffect(() => {
+    if (!voiceInputOn || !voiceRecognition.transcript || selected !== null)
+      return;
+
+    const result = voiceRecognition.parseVoiceCommand(
+      voiceRecognition.transcript
+    );
+
+    if (result.command !== null && result.confidence !== "none") {
+      console.log("🎤 Comando detectado:", result);
+
+      // Comandos especiales
+      if (result.command === "repeat") {
+        if (voiceOn) {
+          speak(
+            `Pregunta ${index + 1}. ${q.q}. Opciones: ${q.options.join(", ")}.`
+          );
+        }
+        voiceRecognition.stopListening();
+        return;
+      }
+
+      if (result.command === "next") {
+        if (selected !== null && index < QUESTIONS.length - 1) {
+          setIndex(index + 1);
+        }
+        voiceRecognition.stopListening();
+        return;
+      }
+
+      // Comandos de respuesta (números 0-3)
+      if (
+        typeof result.command === "number" &&
+        result.command >= 0 &&
+        result.command <= 3
+      ) {
+        // Detener reconocimiento y mostrar confirmación
+        voiceRecognition.stopListening();
+        setPendingVoiceCommand(result.command);
+        setShowVoiceConfirmation(true);
+
+        // Anunciar confirmación por voz
+        if (voiceOn) {
+          const optionLetter = ["A", "B", "C", "D"][result.command];
+          speak(
+            `¿Confirmas opción ${optionLetter}: ${
+              q.options[result.command]
+            }? Haz clic en confirmar o di "sí".`
+          );
+        }
+      }
+    }
+  }, [voiceRecognition.transcript, voiceInputOn, selected, voiceOn, q, index]);
+
+  // Confirmar comando de voz
+  const confirmVoiceCommand = () => {
+    if (pendingVoiceCommand !== null) {
+      handleAnswer(pendingVoiceCommand);
+      setPendingVoiceCommand(null);
+      setShowVoiceConfirmation(false);
+    }
+  };
+
+  // Cancelar comando de voz
+  const cancelVoiceCommand = () => {
+    setPendingVoiceCommand(null);
+    setShowVoiceConfirmation(false);
+    if (voiceOn) {
+      speak("Comando cancelado. Puedes intentar de nuevo.");
+    }
+  };
 
   // Limpiar selección/estado cuando cambia la pregunta
   useEffect(() => {
@@ -264,6 +498,13 @@ export default function App() {
               onChange={setVibrationOn}
             />
             <ToggleSwitch label="Voz" checked={voiceOn} onChange={setVoiceOn} />
+            {voiceRecognition.isSupported && (
+              <ToggleSwitch
+                label="🎤 Entrada por Voz"
+                checked={voiceInputOn}
+                onChange={setVoiceInputOn}
+              />
+            )}
           </div>
         </header>
 
@@ -283,6 +524,30 @@ export default function App() {
           <div aria-live="polite" className={styles.questionContainer}>
             <h2 className={`${styles.question} ${styles.completed}`}>{q.q}</h2>
           </div>
+
+          {/* Entrada por voz */}
+          {voiceInputOn && voiceRecognition.isSupported && (
+            <VoiceMicrophone
+              isListening={voiceRecognition.isListening}
+              transcript={voiceRecognition.transcript}
+              onStartListening={voiceRecognition.startListening}
+              onStopListening={voiceRecognition.stopListening}
+              disabled={selected !== null}
+              className={styles.voiceSection}
+            />
+          )}
+
+          {/* Confirmación de comando de voz */}
+          <VoiceConfirmation
+            show={showVoiceConfirmation}
+            option={pendingVoiceCommand}
+            optionText={
+              pendingVoiceCommand !== null ? q.options[pendingVoiceCommand] : ""
+            }
+            onConfirm={confirmVoiceCommand}
+            onCancel={cancelVoiceCommand}
+            className={styles.voiceConfirmationSection}
+          />
 
           {/* Opciones */}
           <div className={styles.optionsGrid}>
@@ -389,6 +654,99 @@ function ToggleSwitch({ label, checked, onChange }) {
         />
       </button>
     </label>
+  );
+}
+
+function VoiceMicrophone({
+  isListening,
+  transcript,
+  onStartListening,
+  onStopListening,
+  disabled,
+  className,
+}) {
+  return (
+    <div className={`${styles.voiceMicrophone} ${className || ""}`}>
+      <button
+        onClick={isListening ? onStopListening : onStartListening}
+        disabled={disabled}
+        className={`${styles.micButton} ${
+          isListening ? styles.listening : styles.idle
+        }`}
+        aria-label={isListening ? "Parar escucha" : "Empezar a escuchar"}
+      >
+        <span className={styles.micIcon}>🎤</span>
+        {isListening && (
+          <span className={styles.listeningIndicator}>
+            <span className={styles.pulse}></span>
+            <span className={styles.pulse}></span>
+            <span className={styles.pulse}></span>
+          </span>
+        )}
+      </button>
+
+      {transcript && (
+        <div className={styles.transcript}>
+          <span className={styles.transcriptLabel}>Detectado:</span>
+          <span className={styles.transcriptText}>{transcript}</span>
+        </div>
+      )}
+
+      {isListening && (
+        <div className={styles.listeningStatus}>
+          Escuchando... Diga "Opción A", "B", "C" o "D"
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VoiceConfirmation({
+  show,
+  option,
+  optionText,
+  onConfirm,
+  onCancel,
+  className,
+}) {
+  if (!show) return null;
+
+  const optionLetter = ["A", "B", "C", "D"][option];
+
+  return (
+    <div className={`${styles.voiceConfirmation} ${className || ""}`}>
+      <div className={styles.confirmationCard}>
+        <div className={styles.confirmationHeader}>
+          <span className={styles.confirmationIcon}>🎤</span>
+          <h3 className={styles.confirmationTitle}>
+            Confirmar respuesta por voz
+          </h3>
+        </div>
+
+        <div className={styles.confirmationContent}>
+          <p className={styles.confirmationText}>
+            Detectaste: <strong>Opción {optionLetter}</strong>
+          </p>
+          <p className={styles.confirmationOption}>"{optionText}"</p>
+        </div>
+
+        <div className={styles.confirmationActions}>
+          <button
+            onClick={onConfirm}
+            className={`${styles.confirmButton} ${styles.primary}`}
+            autoFocus
+          >
+            ✓ Confirmar
+          </button>
+          <button
+            onClick={onCancel}
+            className={`${styles.confirmButton} ${styles.secondary}`}
+          >
+            ✗ Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

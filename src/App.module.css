@@ -1198,3 +1198,399 @@
 .reducedModeIcon {
   font-size: 1rem;
 }
+
+/* ================================ */
+/* COMPONENTES DE RECONOCIMIENTO DE VOZ */
+/* ================================ */
+
+/* Sección de voz */
+.voiceSection {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: rgba(157, 78, 221, 0.1);
+  border: 1px solid rgba(157, 78, 221, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+/* Contenedor principal del micrófono */
+.voiceMicrophone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Botón del micrófono */
+.micButton {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: 3px solid var(--accent-purple);
+  background: linear-gradient(135deg, var(--accent-purple), var(--accent-cyan));
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(157, 78, 221, 0.3);
+}
+
+.micButton:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 30px rgba(157, 78, 221, 0.4);
+}
+
+.micButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Estado escuchando */
+.micButton.listening {
+  background: linear-gradient(135deg, var(--accent-pink), var(--accent-orange));
+  border-color: var(--accent-pink);
+  animation: micPulse 1.5s ease-in-out infinite;
+  box-shadow: 0 0 30px rgba(255, 0, 110, 0.5);
+}
+
+@keyframes micPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 30px rgba(255, 0, 110, 0.5);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 40px rgba(255, 0, 110, 0.7);
+  }
+}
+
+/* Ícono del micrófono */
+.micIcon {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+/* Indicador de escucha (pulsos alrededor) */
+.listeningIndicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100px;
+  height: 100px;
+  pointer-events: none;
+}
+
+.pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid var(--accent-pink);
+  opacity: 0;
+  animation: pulseOut 2s ease-out infinite;
+}
+
+.pulse:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.pulse:nth-child(3) {
+  animation-delay: 1s;
+}
+
+@keyframes pulseOut {
+  0% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Transcript (texto detectado) */
+.transcript {
+  text-align: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 250px;
+}
+
+.transcriptLabel {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--accent-cyan);
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+}
+
+.transcriptText {
+  display: block;
+  font-size: 1rem;
+  color: white;
+  font-weight: 600;
+  font-style: italic;
+}
+
+/* Estado de escucha */
+.listeningStatus {
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--accent-orange);
+  background: rgba(255, 133, 0, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 133, 0, 0.3);
+  animation: breathe 2s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ================================ */
+/* COMPONENTE DE CONFIRMACIÓN DE VOZ */
+/* ================================ */
+
+.voiceConfirmation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.confirmationCard {
+  background: linear-gradient(
+    135deg,
+    var(--glass-bg),
+    rgba(255, 255, 255, 0.05)
+  );
+  backdrop-filter: blur(20px);
+  border: 2px solid var(--glass-border);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.confirmationHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.confirmationIcon {
+  font-size: 1.5rem;
+}
+
+.confirmationTitle {
+  margin: 0;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.confirmationContent {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.confirmationText {
+  margin: 0 0 1rem 0;
+  color: var(--accent-cyan);
+  font-size: 1rem;
+}
+
+.confirmationOption {
+  margin: 0;
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 600;
+  padding: 1rem;
+  background: rgba(157, 78, 221, 0.2);
+  border-radius: 8px;
+  border: 1px solid var(--accent-purple);
+}
+
+.confirmationActions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.confirmButton {
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  border: 2px solid;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 120px;
+}
+
+.confirmButton.primary {
+  background: linear-gradient(135deg, var(--success-color), #27ae60);
+  border-color: var(--success-color);
+  color: white;
+}
+
+.confirmButton.primary:hover {
+  background: linear-gradient(135deg, #27ae60, var(--success-color));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 255, 136, 0.3);
+}
+
+.confirmButton.secondary {
+  background: transparent;
+  border-color: var(--error-color);
+  color: var(--error-color);
+}
+
+.confirmButton.secondary:hover {
+  background: var(--error-color);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(255, 51, 102, 0.3);
+}
+
+/* ================================ */
+/* ESTILOS DE VOZ PARA MODO REDUCIDO */
+/* ================================ */
+
+/* Sección de voz en modo reducido */
+:global(.reducedMode) .voiceSection,
+.container:global(.reducedMode) .voiceSection {
+  background: rgba(127, 140, 141, 0.1) !important;
+  border-color: #7f8c8d !important;
+  backdrop-filter: none !important;
+}
+
+/* Botón de micrófono simplificado */
+:global(.reducedMode) .micButton,
+.container:global(.reducedMode) .micButton {
+  background: linear-gradient(135deg, #7f8c8d, #95a5a6) !important;
+  border-color: #bdc3c7 !important;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2) !important;
+  animation: none !important;
+}
+
+:global(.reducedMode) .micButton:hover,
+.container:global(.reducedMode) .micButton:hover {
+  background: linear-gradient(135deg, #95a5a6, #bdc3c7) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+}
+
+:global(.reducedMode) .micButton.listening,
+.container:global(.reducedMode) .micButton.listening {
+  background: linear-gradient(135deg, #e67e22, #d35400) !important;
+  border-color: #e67e22 !important;
+  animation: none !important;
+  box-shadow: 0 3px 12px rgba(230, 126, 34, 0.3) !important;
+}
+
+/* Desactivar animaciones de pulso */
+:global(.reducedMode) .listeningIndicator,
+.container:global(.reducedMode) .listeningIndicator {
+  display: none !important;
+}
+
+/* Transcript simplificado */
+:global(.reducedMode) .transcript,
+.container:global(.reducedMode) .transcript {
+  background: rgba(52, 73, 94, 0.6) !important;
+  border-color: #7f8c8d !important;
+}
+
+:global(.reducedMode) .transcriptLabel,
+.container:global(.reducedMode) .transcriptLabel {
+  color: #95a5a6 !important;
+}
+
+:global(.reducedMode) .transcriptText,
+.container:global(.reducedMode) .transcriptText {
+  color: #ecf0f1 !important;
+}
+
+/* Estado de escucha simplificado */
+:global(.reducedMode) .listeningStatus,
+.container:global(.reducedMode) .listeningStatus {
+  background: rgba(230, 126, 34, 0.1) !important;
+  border-color: #e67e22 !important;
+  color: #e67e22 !important;
+  animation: none !important;
+}
+
+/* Confirmación simplificada */
+:global(.reducedMode) .confirmationCard,
+.container:global(.reducedMode) .confirmationCard {
+  background: linear-gradient(135deg, #34495e, #2c3e50) !important;
+  border-color: #7f8c8d !important;
+  backdrop-filter: none !important;
+}
+
+:global(.reducedMode) .confirmButton.primary,
+.container:global(.reducedMode) .confirmButton.primary {
+  background: linear-gradient(135deg, #27ae60, #2ecc71) !important;
+  border-color: #27ae60 !important;
+}
+
+:global(.reducedMode) .confirmButton.secondary,
+.container:global(.reducedMode) .confirmButton.secondary {
+  border-color: #e74c3c !important;
+  color: #e74c3c !important;
+}
+
+:global(.reducedMode) .confirmButton.secondary:hover,
+.container:global(.reducedMode) .confirmButton.secondary:hover {
+  background: #e74c3c !important;
+}
