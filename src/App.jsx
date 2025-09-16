@@ -508,6 +508,10 @@ export default function App() {
   const [pendingGestureCommand, setPendingGestureCommand] = useState(null);
   const [showGestureConfirmation, setShowGestureConfirmation] = useState(false);
 
+  // Estado para modal de resultados finales
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [resultsAlreadyShown, setResultsAlreadyShown] = useState(false);
+
   const { success, error } = useAudioEngine();
   const voiceRecognition = useVoiceRecognition();
   const gestureRecognition = useGestureRecognition();
@@ -789,39 +793,46 @@ export default function App() {
     setShowGestureConfirmation(false);
   }, [index]);
 
-  // Leer resultados finales por voz cuando termine la trivia
+  // Detectar cuando termina la trivia y mostrar modal con resultados
   useEffect(() => {
     const finished = index === QUESTIONS.length - 1 && selected !== null;
 
-    if (finished && voiceOn) {
-      // Esperar un momento para que se procese la última respuesta
+    if (finished && !resultsAlreadyShown) {
+      // Marcar que ya se mostraron los resultados para evitar que se abra repetidamente
+      setResultsAlreadyShown(true);
+
+      // Esperar un momento para que se procese la última respuesta antes de mostrar el modal
       setTimeout(() => {
-        let mensaje = "¡Trivia completada! ";
+        setShowResultsModal(true);
 
-        // Resultados básicos
-        mensaje += `Obtuviste ${score} respuestas correctas de ${QUESTIONS.length} preguntas. `;
+        if (voiceOn) {
+          let mensaje = "¡Trivia completada! ";
 
-        // Porcentaje
-        const porcentaje = Math.round((score / QUESTIONS.length) * 100);
-        mensaje += `Eso es un ${porcentaje} por ciento de aciertos. `;
+          // Resultados básicos
+          mensaje += `Obtuviste ${score} respuestas correctas de ${QUESTIONS.length} preguntas. `;
 
-        // Mensaje de rendimiento
-        if (score === QUESTIONS.length) {
-          mensaje +=
-            "¡Perfecto! Respondiste todas las preguntas correctamente. ¡Felicitaciones!";
-        } else if (score >= QUESTIONS.length * 0.8) {
-          mensaje += "¡Excelente trabajo! Tienes un gran conocimiento.";
-        } else if (score >= QUESTIONS.length * 0.6) {
-          mensaje += "¡Buen trabajo! Sigue practicando para mejorar.";
-        } else {
-          mensaje += "¡Sigue intentando! La práctica hace al maestro.";
+          // Porcentaje
+          const porcentaje = Math.round((score / QUESTIONS.length) * 100);
+          mensaje += `Eso es un ${porcentaje} por ciento de aciertos. `;
+
+          // Mensaje de rendimiento
+          if (score === QUESTIONS.length) {
+            mensaje +=
+              "¡Perfecto! Respondiste todas las preguntas correctamente. ¡Felicitaciones!";
+          } else if (score >= QUESTIONS.length * 0.8) {
+            mensaje += "¡Excelente trabajo! Tienes un gran conocimiento.";
+          } else if (score >= QUESTIONS.length * 0.6) {
+            mensaje += "¡Buen trabajo! Sigue practicando para mejorar.";
+          } else {
+            mensaje += "¡Sigue intentando! La práctica hace al maestro.";
+          }
+
+          console.log("🔊 Leyendo resultados finales:", mensaje);
+          speak(mensaje);
         }
-
-        console.log("🔊 Leyendo resultados finales:", mensaje);
-        speak(mensaje);
       }, 1500); // 1.5 segundos de delay para que se muestre el resultado de la última pregunta
     }
-  }, [index, selected, score, voiceOn]);
+  }, [index, selected, score, voiceOn, resultsAlreadyShown]);
 
   const handleAnswer = (optIdx) => {
     if (selected !== null) return; // ya respondido
@@ -875,6 +886,9 @@ export default function App() {
     // Limpiar estados de voz al reiniciar
     setPendingVoiceCommand(null);
     setShowVoiceConfirmation(false);
+    // Resetear estados del modal de resultados
+    setShowResultsModal(false);
+    setResultsAlreadyShown(false);
     // Limpiar el transcript de voz y detener reconocimiento
     voiceRecognition.stopListening();
     voiceRecognition.clearTranscript();
@@ -1073,115 +1087,144 @@ export default function App() {
               >
                 Siguiente
               </button>
-            ) : (
-              // Pantalla de resultados finales
-              <div className={styles.finalResults}>
-                {/* Efecto de confeti solo en modo vibrante */}
-                {!reducedMode && (
-                  <div className={styles.confetti}>
-                    {[...Array(50)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={`${styles.confettiPiece} ${
-                          styles[`confetti${(i % 6) + 1}`]
-                        }`}
-                        style={{
-                          left: `${Math.random() * 100}%`,
-                          animationDelay: `${Math.random() * 3}s`,
-                          animationDuration: `${3 + Math.random() * 2}s`,
-                        }}
-                      ></div>
-                    ))}
-                  </div>
-                )}
-
-                <div className={styles.resultsCard}>
-                  <h2 className={styles.finalTitle}>¡Trivia Completada! 🎉</h2>
-
-                  <div className={styles.scoreBreakdown}>
-                    <div className={styles.scoreItem}>
-                      <span className={styles.scoreLabel}>
-                        Respuestas Correctas:
-                      </span>
-                      <span
-                        className={`${styles.scoreValue} ${styles.correct}`}
-                      >
-                        {score}
-                      </span>
-                    </div>
-                    <div className={styles.scoreItem}>
-                      <span className={styles.scoreLabel}>
-                        Respuestas Incorrectas:
-                      </span>
-                      <span
-                        className={`${styles.scoreValue} ${styles.incorrect}`}
-                      >
-                        {QUESTIONS.length - score}
-                      </span>
-                    </div>
-                    <div className={styles.scoreDivider}></div>
-                    <div className={styles.scoreItem}>
-                      <span className={styles.scoreLabel}>
-                        Total de Preguntas:
-                      </span>
-                      <span className={styles.scoreValue}>
-                        {QUESTIONS.length}
-                      </span>
-                    </div>
-                    <div className={styles.scoreItem}>
-                      <span className={styles.scoreLabel}>
-                        Porcentaje de Aciertos:
-                      </span>
-                      <span
-                        className={`${styles.scoreValue} ${styles.percentage}`}
-                      >
-                        {Math.round((score / QUESTIONS.length) * 100)}%
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className={styles.performanceMessage}>
-                    {score === QUESTIONS.length ? (
-                      <p className={styles.perfectScore}>
-                        ¡Perfecto! 🌟 Respondiste todas las preguntas
-                        correctamente.
-                      </p>
-                    ) : score >= QUESTIONS.length * 0.8 ? (
-                      <p className={styles.excellentScore}>
-                        ¡Excelente trabajo! 👏 Tienes un gran conocimiento.
-                      </p>
-                    ) : score >= QUESTIONS.length * 0.6 ? (
-                      <p className={styles.goodScore}>
-                        ¡Buen trabajo! 👍 Sigue practicando para mejorar.
-                      </p>
-                    ) : (
-                      <p className={styles.needsImprovement}>
-                        ¡Sigue intentando! 💪 La práctica hace al maestro.
-                      </p>
-                    )}
-                  </div>
-
-                  <button
-                    className={`${styles.navButton} ${styles.restartButton}`}
-                    onClick={restart}
-                  >
-                    Reiniciar Trivia
-                  </button>
-                </div>
-              </div>
-            )}
+            ) : null}
           </div>
         </main>
 
+        {/* Botón Reiniciar cuando la trivia terminó pero el modal está cerrado */}
+        {resultsAlreadyShown && !showResultsModal && (
+          <div className={`${styles.buttonContainer} ${styles.restartSection}`}>
+            <button
+              className={`${styles.button} ${styles.restartButton}`}
+              onClick={restart}
+            >
+              Reiniciar Trivia
+            </button>
+          </div>
+        )}
+
+        {/* Modal de Resultados Finales */}
+        {showResultsModal && (
+          <div
+            className={styles.modalOverlay}
+            onClick={() => setShowResultsModal(false)}
+          >
+            <div
+              className={styles.modalContent}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Efecto de confeti solo en modo vibrante */}
+              {!reducedMode && (
+                <div className={styles.confetti}>
+                  {[...Array(50)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`${styles.confettiPiece} ${
+                        styles[`confetti${(i % 6) + 1}`]
+                      }`}
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        animationDelay: `${Math.random() * 3}s`,
+                        animationDuration: `${3 + Math.random() * 2}s`,
+                      }}
+                    ></div>
+                  ))}
+                </div>
+              )}
+
+              <div className={styles.resultsCard}>
+                <button
+                  className={styles.closeButton}
+                  onClick={() => setShowResultsModal(false)}
+                  aria-label="Cerrar resultados"
+                >
+                  ✕
+                </button>
+
+                <h2 className={styles.finalTitle}>¡Trivia Completada! 🎉</h2>
+
+                <div className={styles.scoreBreakdown}>
+                  <div className={styles.scoreItem}>
+                    <span className={styles.scoreLabel}>
+                      Respuestas Correctas:
+                    </span>
+                    <span className={`${styles.scoreValue} ${styles.correct}`}>
+                      {score}
+                    </span>
+                  </div>
+                  <div className={styles.scoreItem}>
+                    <span className={styles.scoreLabel}>
+                      Respuestas Incorrectas:
+                    </span>
+                    <span
+                      className={`${styles.scoreValue} ${styles.incorrect}`}
+                    >
+                      {QUESTIONS.length - score}
+                    </span>
+                  </div>
+                  <div className={styles.scoreDivider}></div>
+                  <div className={styles.scoreItem}>
+                    <span className={styles.scoreLabel}>
+                      Total de Preguntas:
+                    </span>
+                    <span className={styles.scoreValue}>
+                      {QUESTIONS.length}
+                    </span>
+                  </div>
+                  <div className={styles.scoreItem}>
+                    <span className={styles.scoreLabel}>
+                      Porcentaje de Aciertos:
+                    </span>
+                    <span
+                      className={`${styles.scoreValue} ${styles.percentage}`}
+                    >
+                      {Math.round((score / QUESTIONS.length) * 100)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className={styles.performanceMessage}>
+                  {score === QUESTIONS.length ? (
+                    <p className={styles.perfectScore}>
+                      ¡Perfecto! 🌟 Respondiste todas las preguntas
+                      correctamente.
+                    </p>
+                  ) : score >= QUESTIONS.length * 0.8 ? (
+                    <p className={styles.excellentScore}>
+                      ¡Excelente trabajo! 👏 Tienes un gran conocimiento.
+                    </p>
+                  ) : score >= QUESTIONS.length * 0.6 ? (
+                    <p className={styles.goodScore}>
+                      ¡Buen trabajo! 👍 Sigue practicando para mejorar.
+                    </p>
+                  ) : (
+                    <p className={styles.needsImprovement}>
+                      ¡Sigue intentando! 💪 La práctica hace al maestro.
+                    </p>
+                  )}
+                </div>
+
+                <button
+                  className={`${styles.navButton} ${styles.restartButton}`}
+                  onClick={() => {
+                    setShowResultsModal(false);
+                    restart();
+                  }}
+                >
+                  Reiniciar Trivia
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Nota de accesibilidad */}
         <p className={styles.accessibilityNote}>
-          Consejo: activa/desactiva{" "}
+          Recomendación: activar/desactivar{" "}
           <span className={styles.highlight}>Sonido</span>,{" "}
           <span className={styles.highlight}>Vibración</span> y{" "}
-          <span className={styles.highlight}>Voz</span> para mostrar cómo se
-          evita la sobrecarga sensorial y cómo se refuerza la accesibilidad.
-          Esta demo no depende solo del color: utiliza iconos, texto y feedback
-          multisensorial.
+          <span className={styles.highlight}>Voz</span> para evitar la
+          sobrecarga sensorial.
         </p>
       </div>
     </div>

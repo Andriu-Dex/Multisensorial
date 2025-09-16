@@ -2818,3 +2818,163 @@
   font-size: 0.8rem !important;
   padding: 0.5rem !important;
 }
+
+/* ===============================
+   MODAL DE RESULTADOS FINALES
+   =============================== */
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.4s ease;
+  padding: 1rem;
+}
+
+.modalContent {
+  position: relative;
+  background: var(--primary-dark);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: modalSlideIn 0.5s ease;
+  border: 2px solid var(--accent-green);
+}
+
+@keyframes modalSlideIn {
+  from {
+    transform: scale(0.8) translateY(-20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.closeButton {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #999;
+  cursor: pointer;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  transform: scale(1.1);
+}
+
+.closeButton:focus {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 2px;
+}
+
+/* El modal contiene el mismo contenido de finalResults, 
+   así que las clases .resultsCard, .confetti, etc. ya están definidas */
+
+/* Ajustes específicos para el modal */
+.modalContent .resultsCard {
+  margin: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.modalContent .confetti {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* Responsive design para el modal */
+@media (max-width: 600px) {
+  .modalContent {
+    margin: 0.5rem;
+    border-radius: 15px;
+    max-height: 95vh;
+  }
+
+  .closeButton {
+    top: 10px;
+    right: 10px;
+    font-size: 1.3rem;
+    width: 30px;
+    height: 30px;
+  }
+}
+
+/* Sección de reinicio cuando el modal está cerrado */
+.restartSection {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 100;
+}
+
+.restartButton {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  padding: 1rem 1.5rem;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  margin-left: 28%;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 11rem;
+}
+
+.restartButton:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+}
+
+.restartButton:active {
+  transform: translateY(0);
+}
+
+/* Modo reducido para botón de reinicio */
+.reducedMode .restartButton {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+  font-size: 1rem;
+  padding: 0.75rem 1.25rem;
+}
+
+.reducedMode .restartButton:hover {
+  background: linear-gradient(135deg, #4b5563, #374151);
+}
