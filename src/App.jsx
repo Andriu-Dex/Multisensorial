@@ -238,6 +238,7 @@ function useGestureRecognition() {
   const [error, setError] = useState(null);
   const [isSupported, setIsSupported] = useState(true);
   const [fingersUp, setFingersUp] = useState([]);
+  const [handLandmarks, setHandLandmarks] = useState(null);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -301,10 +302,13 @@ function useGestureRecognition() {
       setDetectedGesture(null);
       setConfidence(0);
       setFingersUp([]);
+      setHandLandmarks(null);
       return;
     }
 
     const landmarks = results.multiHandLandmarks[0];
+    setHandLandmarks(landmarks); // Guardar landmarks para visualización
+
     const fingers = countFingers(landmarks);
     setFingersUp(fingers);
 
@@ -425,6 +429,7 @@ function useGestureRecognition() {
     detectedGesture,
     confidence,
     fingersUp,
+    handLandmarks,
     error,
     videoRef,
     canvasRef,
@@ -908,7 +913,7 @@ export default function App() {
             )}
             {gestureRecognition.isSupported && (
               <ToggleSwitch
-                label="🤚 Gestos (PRUEBA)"
+                label="🤚 Gestos"
                 checked={gestureInputOn}
                 onChange={setGestureInputOn}
               />
@@ -971,112 +976,15 @@ export default function App() {
             className={styles.gestureConfirmationSection}
           />
 
-          {/* Entrada por gestos - PRUEBA BÁSICA */}
+          {/* Sistema de Gestos Avanzado */}
           {gestureInputOn && gestureRecognition.isSupported && (
-            <div className={styles.gestureSection}>
-              <h3 className={styles.gestureTitle}>
-                🤚 Detección de Gestos con MediaPipe
-              </h3>
-
-              {gestureRecognition.error && (
-                <div className={styles.gestureError}>
-                  ⚠️ {gestureRecognition.error}
-                </div>
-              )}
-
-              <div className={styles.cameraContainer}>
-                <video
-                  ref={gestureRecognition.videoRef}
-                  className={styles.gestureVideo}
-                  autoPlay
-                  muted
-                  playsInline
-                />
-                <canvas
-                  ref={gestureRecognition.canvasRef}
-                  className={styles.gestureCanvas}
-                  style={{ display: "none" }} // Oculto por ahora
-                />
-
-                <div className={styles.gestureOverlay}>
-                  <div className={styles.gestureStatus}>
-                    {gestureRecognition.isActive ? (
-                      <>
-                        <span className={styles.gestureIndicator}>
-                          🔴 MediaPipe Activo
-                        </span>
-                        {gestureRecognition.detectedGesture !== null ? (
-                          <div className={styles.gestureDetected}>
-                            <span>✋ Gesto: Opción A (1 dedo)</span>
-                            <span>
-                              Confianza:{" "}
-                              {Math.round(gestureRecognition.confidence * 100)}%
-                            </span>
-                            <span className={styles.fingersDebug}>
-                              Dedos:{" "}
-                              {gestureRecognition.fingersUp
-                                .map((up, i) =>
-                                  up
-                                    ? `${["👍", "👆", "🖕", "💍", "🤙"][i]}`
-                                    : "✋"
-                                )
-                                .join(" ")}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className={styles.gestureWaiting}>
-                            <span>Muestra 1 dedo para Opción A</span>
-                            {gestureRecognition.fingersUp.length > 0 && (
-                              <span className={styles.fingersDebug}>
-                                Dedos actuales:{" "}
-                                {
-                                  gestureRecognition.fingersUp.filter(Boolean)
-                                    .length
-                                }
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <span className={styles.gestureInactive}>
-                        📷 Iniciando MediaPipe...
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className={styles.gestureInstructions}>
-                <p>
-                  <strong>Instrucciones:</strong>
-                </p>
-                <p>👆 Muestra 1 dedo para seleccionar la Opción A</p>
-                <p>
-                  <small>
-                    Usando MediaPipe Hands para detección real de gestos.
-                  </small>
-                </p>
-
-                {/* Botón de prueba manual */}
-                <button
-                  className={styles.testGestureButton}
-                  onClick={() => {
-                    console.log("🤚 Botón de prueba manual presionado");
-                    if (selected === null) {
-                      console.log("🤚 Simulando detección manual...");
-                      handleAnswer(0);
-                      if (soundOn) success();
-                      if (voiceOn)
-                        speak("Prueba manual: Opción A seleccionada");
-                    }
-                  }}
-                  disabled={selected !== null}
-                >
-                  🧪 Probar Selección Manual (Opción A)
-                </button>
-              </div>
-            </div>
+            <GestureInterface
+              gestureRecognition={gestureRecognition}
+              pendingCommand={pendingGestureCommand}
+              showConfirmation={showGestureConfirmation}
+              currentQuestion={q}
+              reducedMode={reducedMode}
+            />
           )}
 
           {/* Opciones */}
@@ -1442,6 +1350,269 @@ function OptionButton({ text, onClick, disabled, state }) {
       </span>
       <span>{text}</span>
     </button>
+  );
+}
+
+function GestureInterface({
+  gestureRecognition,
+  pendingCommand,
+  showConfirmation,
+  currentQuestion,
+  reducedMode,
+}) {
+  const canvasRef = useRef(null);
+
+  // Dibuja los landmarks de la mano en el canvas overlay
+  const drawHandLandmarks = () => {
+    const canvas = canvasRef.current;
+    const video = gestureRecognition.videoRef.current;
+
+    if (!canvas || !video || !gestureRecognition.handLandmarks) return;
+
+    const ctx = canvas.getContext("2d");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const landmarks = gestureRecognition.handLandmarks;
+
+    // Configuración de estilo
+    ctx.fillStyle = reducedMode ? "#00ff88" : "#00ffff";
+    ctx.strokeStyle = reducedMode ? "#00ff88" : "#ff00ff";
+    ctx.lineWidth = reducedMode ? 3 : 2;
+
+    // Dibujar puntos de los landmarks
+    landmarks.forEach((landmark, index) => {
+      const x = landmark.x * canvas.width;
+      const y = landmark.y * canvas.height;
+
+      ctx.beginPath();
+      ctx.arc(x, y, reducedMode ? 6 : 4, 0, 2 * Math.PI);
+      ctx.fill();
+
+      // Números en puntos clave
+      if ([0, 4, 8, 12, 16, 20].includes(index)) {
+        ctx.fillStyle = reducedMode ? "#ffffff" : "#ffff00";
+        ctx.font = `${reducedMode ? "14px" : "12px"} Arial`;
+        ctx.fillText(index.toString(), x + 8, y - 8);
+        ctx.fillStyle = reducedMode ? "#00ff88" : "#00ffff";
+      }
+    });
+
+    // Dibujar conexiones de la mano
+    const connections = [
+      // Pulgar
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      // Índice
+      [0, 5],
+      [5, 6],
+      [6, 7],
+      [7, 8],
+      // Medio
+      [0, 9],
+      [9, 10],
+      [10, 11],
+      [11, 12],
+      // Anular
+      [0, 13],
+      [13, 14],
+      [14, 15],
+      [15, 16],
+      // Meñique
+      [0, 17],
+      [17, 18],
+      [18, 19],
+      [19, 20],
+      // Palma
+      [5, 9],
+      [9, 13],
+      [13, 17],
+    ];
+
+    connections.forEach(([start, end]) => {
+      const startPoint = landmarks[start];
+      const endPoint = landmarks[end];
+
+      ctx.beginPath();
+      ctx.moveTo(startPoint.x * canvas.width, startPoint.y * canvas.height);
+      ctx.lineTo(endPoint.x * canvas.width, endPoint.y * canvas.height);
+      ctx.stroke();
+    });
+  };
+
+  // Actualizar el dibujo cuando cambien los landmarks
+  useEffect(() => {
+    if (gestureRecognition.handLandmarks) {
+      drawHandLandmarks();
+    }
+  }, [gestureRecognition.handLandmarks, reducedMode]);
+
+  const getGestureInfo = () => {
+    const fingerCount = gestureRecognition.detectedGesture;
+    if (fingerCount === null) return null;
+
+    const options = ["A", "B", "C", "D"];
+    const gestures = ["👆", "✌️", "🤟", "🖖"];
+
+    if (fingerCount >= 1 && fingerCount <= 4) {
+      return {
+        letter: options[fingerCount - 1],
+        emoji: gestures[fingerCount - 1],
+        text: currentQuestion.options[fingerCount - 1],
+        count: fingerCount,
+      };
+    }
+
+    if (fingerCount === 0)
+      return { letter: "OK", emoji: "👊", text: "Confirmar", count: 0 };
+    if (fingerCount === 5)
+      return { letter: "CANCEL", emoji: "🖐️", text: "Cancelar", count: 5 };
+
+    return null;
+  };
+
+  const gestureInfo = getGestureInfo();
+
+  return (
+    <div
+      className={`${styles.gestureInterface} ${
+        reducedMode ? styles.reduced : styles.vibrant
+      }`}
+    >
+      {/* Header con título dinámico */}
+      <div className={styles.gestureHeader}>
+        <div className={styles.gestureTitle}>
+          🤚 Sistema de Gestos {reducedMode ? "Suave" : "Vibrante"}
+        </div>
+        <div className={styles.gestureSubtitle}>
+          {showConfirmation ? "Confirma tu respuesta" : "Selecciona tu opción"}
+        </div>
+      </div>
+
+      {/* Error handling */}
+      {gestureRecognition.error && (
+        <div className={styles.gestureError}>⚠️ {gestureRecognition.error}</div>
+      )}
+
+      {/* Contenedor principal con cámara y controles */}
+      <div className={styles.gestureMainContainer}>
+        {/* Video y overlay de detección */}
+        <div className={styles.cameraContainer}>
+          <video
+            ref={gestureRecognition.videoRef}
+            className={styles.gestureVideo}
+            autoPlay
+            muted
+            playsInline
+          />
+
+          {/* Canvas overlay para dibujar landmarks */}
+          <canvas ref={canvasRef} className={styles.landmarksOverlay} />
+
+          {/* Overlay de información */}
+          <div className={styles.gestureOverlay}>
+            {/* Status indicator */}
+            <div className={styles.statusIndicator}>
+              <div
+                className={`${styles.statusDot} ${
+                  gestureRecognition.isActive ? styles.active : styles.inactive
+                }`}
+              ></div>
+              <span>
+                {gestureRecognition.isActive
+                  ? "MediaPipe Activo"
+                  : "Iniciando..."}
+              </span>
+            </div>
+
+            {/* Detección actual */}
+            {gestureInfo && (
+              <div className={styles.currentDetection}>
+                <div className={styles.gestureEmoji}>{gestureInfo.emoji}</div>
+                <div className={styles.gestureInfo}>
+                  <div className={styles.gestureOption}>
+                    Opción {gestureInfo.letter}
+                  </div>
+                  <div className={styles.gestureCount}>
+                    {gestureInfo.count} dedo{gestureInfo.count !== 1 ? "s" : ""}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Confidence meter */}
+            {gestureRecognition.confidence > 0 && (
+              <div className={styles.confidenceMeter}>
+                <div className={styles.confidenceBar}>
+                  <div
+                    className={styles.confidenceFill}
+                    style={{ width: `${gestureRecognition.confidence * 100}%` }}
+                  ></div>
+                </div>
+                <span>{Math.round(gestureRecognition.confidence * 100)}%</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Panel de instrucciones */}
+        <div className={styles.instructionsPanel}>
+          {!showConfirmation ? (
+            <>
+              <h4>Gestos disponibles:</h4>
+              <div className={styles.gestureGuide}>
+                {currentQuestion.options.map((option, index) => (
+                  <div key={index} className={styles.gestureOption}>
+                    <span className={styles.gestureEmoji}>
+                      {["👆", "✌️", "🤟", "🖖"][index]}
+                    </span>
+                    <span className={styles.optionLetter}>
+                      {["A", "B", "C", "D"][index]}
+                    </span>
+                    <span className={styles.fingerCount}>
+                      {index + 1} dedo{index !== 0 ? "s" : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <h4>Confirma tu elección:</h4>
+              <div className={styles.confirmationGuide}>
+                <div className={styles.gestureOption}>
+                  <span className={styles.gestureEmoji}>👊</span>
+                  <span className={styles.optionLetter}>OK</span>
+                  <span className={styles.fingerCount}>Puño cerrado</span>
+                </div>
+                <div className={styles.gestureOption}>
+                  <span className={styles.gestureEmoji}>🖐️</span>
+                  <span className={styles.optionLetter}>CANCEL</span>
+                  <span className={styles.fingerCount}>Mano abierta</span>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Debug info (solo en modo vibrante) */}
+          {!reducedMode && gestureRecognition.fingersUp.length > 0 && (
+            <div className={styles.debugInfo}>
+              <small>
+                Debug: [
+                {gestureRecognition.fingersUp
+                  .map((f) => (f ? "1" : "0"))
+                  .join(", ")}
+                ]
+              </small>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
