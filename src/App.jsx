@@ -553,6 +553,9 @@ export default function App() {
   const [gestureInputOn, setGestureInputOn] = useState(false);
   const [reducedMode, setReducedMode] = useState(false);
 
+  // Nuevas preferencias de accesibilidad
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
   // Estados para reconocimiento de voz
   const [pendingVoiceCommand, setPendingVoiceCommand] = useState(null);
   const [showVoiceConfirmation, setShowVoiceConfirmation] = useState(false);
@@ -1055,7 +1058,10 @@ export default function App() {
   const finished = triviaCompleted || resultsAlreadyShown; // Trivia completada o resultados ya mostrados
 
   return (
-    <div className={`${styles.container} ${reducedMode ? "reducedMode" : ""}`}>
+    <div
+      className={`${styles.container} 
+        ${reducedMode ? "reducedMode" : ""}`}
+    >
       {/* Figuras 3D animadas de fondo - Solo en modo vibrante */}
       {!reducedMode && (
         <div className={styles.shapes3D}>
@@ -1128,14 +1134,55 @@ export default function App() {
           </div>
         </header>
 
-        {/* Progreso */}
+        {/* Progreso mejorado */}
         <div className={styles.progress}>
-          <span className={styles.progressText}>
-            Pregunta {index + 1} de {QUESTIONS.length}
-          </span>
-          <span className={styles.progressText}>
-            Puntaje: <span className={styles.score}>{score}</span>
-          </span>
+          <div className={styles.progressInfo}>
+            <span className={styles.progressText}>
+              Pregunta {index + 1} de {QUESTIONS.length}
+            </span>
+            <span className={styles.progressText}>
+              Puntaje: <span className={styles.score}>{score}</span>
+            </span>
+          </div>
+
+          {/* Barra de progreso visual */}
+          <div className={styles.progressBarContainer}>
+            <div
+              className={styles.progressBar}
+              style={{ width: `${((index + 1) / QUESTIONS.length) * 100}%` }}
+              aria-label={`Progreso: ${index + 1} de ${
+                QUESTIONS.length
+              } preguntas completadas`}
+            >
+              <div className={styles.progressBarGlow}></div>
+            </div>
+            <div className={styles.progressBarBackground}></div>
+          </div>
+
+          {/* Indicadores de preguntas */}
+          <div className={styles.questionIndicators}>
+            {QUESTIONS.map((_, i) => (
+              <div
+                key={i}
+                className={`${styles.questionIndicator} ${
+                  i < index
+                    ? styles.completed
+                    : i === index
+                    ? styles.current
+                    : styles.upcoming
+                }`}
+                aria-label={`Pregunta ${i + 1} ${
+                  i < index
+                    ? "completada"
+                    : i === index
+                    ? "actual"
+                    : "pendiente"
+                }`}
+              >
+                {i < index ? "✓" : i === index ? "●" : "○"}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Área principal */}
@@ -1204,14 +1251,15 @@ export default function App() {
                   : i === selected
                   ? "wrong"
                   : "idle";
-              const optionLetter = ["a)", "b)", "c)", "d)"][i];
+              const optionLetter = ["A", "B", "C", "D"][i];
               return (
                 <OptionButton
                   key={i}
-                  text={`${optionLetter} ${opt}`}
+                  text={`${["a)", "b)", "c)", "d)"][i]} ${opt}`}
                   onClick={() => handleAnswer(i)}
                   disabled={selected !== null}
                   state={state}
+                  optionLetter={optionLetter}
                 />
               );
             })}
@@ -1384,6 +1432,19 @@ export default function App() {
           <span className={styles.highlight}>Voz</span> para evitar la
           sobrecarga sensorial.
         </p>
+
+        {/* Botón flotante de ayuda */}
+        <button
+          className={styles.helpFloatingButton}
+          onClick={() => setShowHelpModal(true)}
+          aria-label="Abrir instrucciones de uso"
+          title="Instrucciones de uso"
+        >
+          <span className={styles.helpIcon}>❓</span>
+        </button>
+
+        {/* Modal de ayuda/instrucciones */}
+        {showHelpModal && <HelpModal onClose={() => setShowHelpModal(false)} />}
       </div>
     </div>
   );
@@ -1633,7 +1694,7 @@ function GestureConfirmation({
   );
 }
 
-function OptionButton({ text, onClick, disabled, state }) {
+function OptionButton({ text, onClick, disabled, state, optionLetter }) {
   const icon = {
     idle: "",
     correct: "✔",
@@ -1642,10 +1703,11 @@ function OptionButton({ text, onClick, disabled, state }) {
 
   return (
     <button
-      className={`${styles.optionButton} ${styles[state]}`}
+      className={`${styles.optionButton} ${styles[state]} ${styles.option}`}
       onClick={onClick}
       disabled={disabled}
       aria-disabled={disabled}
+      data-option={optionLetter}
     >
       <span className={styles.optionIcon} aria-hidden>
         {icon}
@@ -1931,6 +1993,103 @@ function StatusBanner({ type, text, reducedMotion }) {
         {icon}
       </span>
       <span>{text}</span>
+    </div>
+  );
+}
+
+function HelpModal({ onClose }) {
+  return (
+    <div className={styles.helpModalOverlay} onClick={onClose}>
+      <div className={styles.helpModal} onClick={(e) => e.stopPropagation()}>
+        <div className={styles.helpModalHeader}>
+          <h2 className={styles.helpModalTitle}>📖 Instrucciones de Uso</h2>
+          <button
+            className={styles.helpModalClose}
+            onClick={onClose}
+            aria-label="Cerrar instrucciones"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className={styles.helpModalContent}>
+          <div className={styles.helpSection}>
+            <h3 className={styles.helpSectionTitle}>🎤 Entrada por Voz</h3>
+            <ul className={styles.helpList}>
+              <li>Activa el modo "Entrada por Voz" en los controles</li>
+              <li>
+                Di claramente: "Opción A", "Opción B", "Opción C" o "Opción D"
+              </li>
+              <li>Confirma tu respuesta cuando se te solicite</li>
+              <li>Habla con claridad y en un ambiente silencioso</li>
+            </ul>
+          </div>
+
+          <div className={styles.helpSection}>
+            <h3 className={styles.helpSectionTitle}>🤚 Control por Gestos</h3>
+            <ul className={styles.helpList}>
+              <li>Activa "Gestos" en los controles superiores</li>
+              <li>Permite el acceso a la cámara cuando se solicite</li>
+              <li>Muestra 1, 2, 3 o 4 dedos para seleccionar A, B, C o D</li>
+              <li>Mantén la mano visible y estable frente a la cámara</li>
+            </ul>
+          </div>
+
+          <div className={styles.helpSection}>
+            <h3 className={styles.helpSectionTitle}>
+              ⌨️ Navegación por Teclado
+            </h3>
+            <ul className={styles.helpList}>
+              <li>
+                <kbd>1</kbd> - <kbd>4</kbd>: Seleccionar opciones A-D
+              </li>
+              <li>
+                <kbd>Enter</kbd>: Confirmar respuesta seleccionada
+              </li>
+              <li>
+                <kbd>Tab</kbd>: Navegar entre elementos
+              </li>
+              <li>
+                <kbd>Escape</kbd>: Cerrar modales
+              </li>
+            </ul>
+          </div>
+
+          <div className={styles.helpSection}>
+            <h3 className={styles.helpSectionTitle}>
+              ♿ Opciones de Accesibilidad
+            </h3>
+            <ul className={styles.helpList}>
+              <li>
+                <strong>Modo Suave:</strong> Reduce animaciones y simplifica la
+                interfaz
+              </li>
+              <li>
+                <strong>Sonido/Vibración:</strong> Feedback multisensorial para
+                confirmaciones
+              </li>
+            </ul>
+          </div>
+
+          <div className={styles.helpSection}>
+            <h3 className={styles.helpSectionTitle}>💡 Consejos Generales</h3>
+            <ul className={styles.helpList}>
+              <li>
+                Activa solo los modos que necesites para evitar sobrecarga
+                sensorial
+              </li>
+              <li>Usa auriculares para mejor experiencia de audio</li>
+              <li>
+                Asegúrate de tener buena iluminación para el reconocimiento de
+                gestos
+              </li>
+              <li>
+                Todas las configuraciones se pueden cambiar en cualquier momento
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
