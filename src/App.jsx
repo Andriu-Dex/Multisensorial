@@ -1434,7 +1434,38 @@ function VoiceMicrophone({
   className,
 }) {
   return (
-    <div className={`${styles.voiceMicrophone} ${className || ""}`}>
+    <div
+      className={`${styles.voiceMicrophone} ${className || ""} ${
+        shouldListen ? styles.active : ""
+      }`}
+    >
+      {/* Glow effects */}
+      {shouldListen && (
+        <>
+          <div
+            className={styles.glowEffect}
+            style={{ top: "20%", left: "15%" }}
+          ></div>
+          <div
+            className={styles.glowEffect}
+            style={{ top: "70%", right: "20%" }}
+          ></div>
+        </>
+      )}
+
+      {/* Decorative sound waves */}
+      <div className={styles.decorativeWaves}>
+        <div className={styles.waveContainer}>
+          {Array.from({ length: 9 }).map((_, i) => (
+            <div
+              key={i}
+              className={styles.wave}
+              style={{ animationDelay: `${i * 0.15}s` }}
+            ></div>
+          ))}
+        </div>
+      </div>
+
       {/* Indicador de estado activo */}
       <div
         className={`${styles.micIndicator} ${
@@ -1447,9 +1478,21 @@ function VoiceMicrophone({
         </span>
         {shouldListen && (
           <span className={styles.listeningIndicator}>
-            <span className={styles.pulse}></span>
-            <span className={styles.pulse}></span>
-            <span className={styles.pulse}></span>
+            <span
+              className={`${styles.pulse} ${
+                isListening ? styles.isListening : ""
+              }`}
+            ></span>
+            <span
+              className={`${styles.pulse} ${
+                isListening ? styles.isListening : ""
+              }`}
+            ></span>
+            <span
+              className={`${styles.pulse} ${
+                isListening ? styles.isListening : ""
+              }`}
+            ></span>
           </span>
         )}
       </div>
@@ -1462,10 +1505,22 @@ function VoiceMicrophone({
       )}
 
       {shouldListen && (
-        <div className={styles.listeningStatus}>
-          {isListening
-            ? "🎤 Escuchando... Diga 'Opción A', 'B', 'C' o 'D'"
-            : "🎤 Reconocimiento activo - Hable cuando esté listo"}
+        <div
+          className={`${styles.listeningStatus} ${
+            isListening ? styles.listening : ""
+          }`}
+        >
+          {isListening ? (
+            <>
+              <span className={styles.listeningIcon}>🎤</span>
+              <span>Escuchando... Diga 'Opción A', 'B', 'C' o 'D'</span>
+            </>
+          ) : (
+            <>
+              <span className={styles.listeningIcon}>🎤</span>
+              <span>Reconocimiento activo - Hable cuando esté listo</span>
+            </>
+          )}
         </div>
       )}
     </div>
