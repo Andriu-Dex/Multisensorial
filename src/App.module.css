@@ -1553,7 +1553,7 @@
 
 :global(.reducedMode) .transcriptLabel,
 .container:global(.reducedMode) .transcriptLabel {
-  color: #95a5a6 !important;
+  color: #ffffff !important;
 }
 
 :global(.reducedMode) .transcriptText,
@@ -2091,7 +2091,7 @@
 
 :global(.reducedMode) .gestureTitle,
 .container:global(.reducedMode) .gestureTitle {
-  color: #95a5a6 !important;
+  color: #ffffff !important;
 }
 
 :global(.reducedMode) .gestureError,
@@ -2143,7 +2143,7 @@
 
 :global(.reducedMode) .gestureInstructions p:first-child,
 .container:global(.reducedMode) .gestureInstructions p:first-child {
-  color: #95a5a6 !important;
+  color: #ffffff !important;
 }
 
 :global(.reducedMode) .testGestureButton,

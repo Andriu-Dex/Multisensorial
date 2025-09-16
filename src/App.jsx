@@ -789,6 +789,40 @@ export default function App() {
     setShowGestureConfirmation(false);
   }, [index]);
 
+  // Leer resultados finales por voz cuando termine la trivia
+  useEffect(() => {
+    const finished = index === QUESTIONS.length - 1 && selected !== null;
+
+    if (finished && voiceOn) {
+      // Esperar un momento para que se procese la última respuesta
+      setTimeout(() => {
+        let mensaje = "¡Trivia completada! ";
+
+        // Resultados básicos
+        mensaje += `Obtuviste ${score} respuestas correctas de ${QUESTIONS.length} preguntas. `;
+
+        // Porcentaje
+        const porcentaje = Math.round((score / QUESTIONS.length) * 100);
+        mensaje += `Eso es un ${porcentaje} por ciento de aciertos. `;
+
+        // Mensaje de rendimiento
+        if (score === QUESTIONS.length) {
+          mensaje +=
+            "¡Perfecto! Respondiste todas las preguntas correctamente. ¡Felicitaciones!";
+        } else if (score >= QUESTIONS.length * 0.8) {
+          mensaje += "¡Excelente trabajo! Tienes un gran conocimiento.";
+        } else if (score >= QUESTIONS.length * 0.6) {
+          mensaje += "¡Buen trabajo! Sigue practicando para mejorar.";
+        } else {
+          mensaje += "¡Sigue intentando! La práctica hace al maestro.";
+        }
+
+        console.log("🔊 Leyendo resultados finales:", mensaje);
+        speak(mensaje);
+      }, 1500); // 1.5 segundos de delay para que se muestre el resultado de la última pregunta
+    }
+  }, [index, selected, score, voiceOn]);
+
   const handleAnswer = (optIdx) => {
     if (selected !== null) return; // ya respondido
     setSelected(optIdx);
