@@ -229,6 +229,211 @@ function useVoiceRecognition() {
 }
 
 // =====================
+// Hook de Reconocimiento de Gestos con MediaPipe
+// =====================
+function useGestureRecognition() {
+  const [isActive, setIsActive] = useState(false);
+  const [detectedGesture, setDetectedGesture] = useState(null);
+  const [confidence, setConfidence] = useState(0);
+  const [error, setError] = useState(null);
+  const [isSupported, setIsSupported] = useState(true);
+  const [fingersUp, setFingersUp] = useState([]);
+
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const handsRef = useRef(null);
+  const cameraRef = useRef(null);
+
+  // Verificar soporte del navegador y cargar MediaPipe
+  useEffect(() => {
+    const checkSupport = async () => {
+      try {
+        const supported =
+          navigator.mediaDevices &&
+          navigator.mediaDevices.getUserMedia &&
+          typeof HTMLCanvasElement !== "undefined";
+
+        if (!supported) {
+          setIsSupported(false);
+          return;
+        }
+
+        // Cargar MediaPipe Hands
+        const { Hands } = await import("@mediapipe/hands");
+        const { Camera } = await import("@mediapipe/camera_utils");
+
+        console.log("🤚 MediaPipe Hands cargado exitosamente");
+        setIsSupported(true);
+
+        // Configurar MediaPipe Hands
+        const hands = new Hands({
+          locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+          },
+        });
+
+        hands.setOptions({
+          maxNumHands: 1,
+          modelComplexity: 1,
+          minDetectionConfidence: 0.5,
+          minTrackingConfidence: 0.5,
+        });
+
+        hands.onResults(onResults);
+        handsRef.current = hands;
+      } catch (err) {
+        console.error("🤚 Error cargando MediaPipe:", err);
+        setError("Error al cargar la librería de detección de gestos");
+        setIsSupported(false);
+      }
+    };
+
+    checkSupport();
+  }, []);
+
+  // Procesar resultados de MediaPipe
+  const onResults = (results) => {
+    if (
+      !results.multiHandLandmarks ||
+      results.multiHandLandmarks.length === 0
+    ) {
+      setDetectedGesture(null);
+      setConfidence(0);
+      setFingersUp([]);
+      return;
+    }
+
+    const landmarks = results.multiHandLandmarks[0];
+    const fingers = countFingers(landmarks);
+    setFingersUp(fingers);
+
+    const fingersCount = fingers.filter(Boolean).length;
+    console.log("🤚 Dedos detectados:", fingersCount, "Dedos arriba:", fingers);
+
+    // Directamente asignar el número de dedos detectados
+    setDetectedGesture(fingersCount);
+    setConfidence(0.9);
+    console.log(`🤚 ¡${fingersCount} DEDO(S) DETECTADO!`);
+  };
+
+  // Contar dedos levantados
+  const countFingers = (landmarks) => {
+    if (!landmarks || landmarks.length < 21) return [];
+
+    const fingers = [false, false, false, false, false]; // [pulgar, índice, medio, anular, meñique]
+
+    // Puntos de referencia de las puntas de los dedos
+    const tipIds = [4, 8, 12, 16, 20];
+
+    // Pulgar (lógica especial por orientación)
+    if (landmarks[tipIds[0]].x > landmarks[tipIds[0] - 1].x) {
+      fingers[0] = true;
+    }
+
+    // Otros dedos (compara punta con articulación)
+    for (let i = 1; i < 5; i++) {
+      if (landmarks[tipIds[i]].y < landmarks[tipIds[i] - 2].y) {
+        fingers[i] = true;
+      }
+    }
+
+    return fingers;
+  };
+
+  // Inicializar cámara con MediaPipe
+  const startCamera = async () => {
+    try {
+      console.log("🤚 Iniciando cámara con MediaPipe...");
+      setError(null);
+
+      if (!handsRef.current) {
+        setError("MediaPipe no está inicializado");
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          width: 640,
+          height: 480,
+          facingMode: "user",
+        },
+      });
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        streamRef.current = stream;
+        setIsActive(true);
+
+        // Configurar cámara de MediaPipe
+        const { Camera } = await import("@mediapipe/camera_utils");
+        const camera = new Camera(videoRef.current, {
+          onFrame: async () => {
+            if (handsRef.current && videoRef.current) {
+              await handsRef.current.send({ image: videoRef.current });
+            }
+          },
+          width: 640,
+          height: 480,
+        });
+
+        cameraRef.current = camera;
+        camera.start();
+        console.log("🤚 Cámara MediaPipe iniciada");
+      }
+    } catch (err) {
+      console.error("🤚 Error al inicializar cámara:", err);
+      setError("No se pudo acceder a la cámara. Verifique los permisos.");
+      setIsActive(false);
+    }
+  };
+
+  // Detener cámara
+  const stopCamera = () => {
+    console.log("🤚 Deteniendo cámara MediaPipe...");
+
+    if (cameraRef.current) {
+      cameraRef.current.stop();
+      cameraRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        console.log("🤚 Deteniendo track:", track.kind);
+        track.stop();
+      });
+      streamRef.current = null;
+    }
+
+    setIsActive(false);
+    setDetectedGesture(null);
+    setConfidence(0);
+    setFingersUp([]);
+    console.log("🤚 Cámara MediaPipe detenida");
+  };
+
+  // Limpiar al desmontar
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  return {
+    isActive,
+    isSupported,
+    detectedGesture,
+    confidence,
+    fingersUp,
+    error,
+    videoRef,
+    canvasRef,
+    startCamera,
+    stopCamera,
+  };
+}
+
+// =====================
 // Preguntas de ejemplo
 // =====================
 const QUESTIONS = [
@@ -287,14 +492,20 @@ export default function App() {
   const [vibrationOn, setVibrationOn] = useState(true);
   const [voiceOn, setVoiceOn] = useState(false);
   const [voiceInputOn, setVoiceInputOn] = useState(false);
+  const [gestureInputOn, setGestureInputOn] = useState(false);
   const [reducedMode, setReducedMode] = useState(false);
 
   // Estados para reconocimiento de voz
   const [pendingVoiceCommand, setPendingVoiceCommand] = useState(null);
   const [showVoiceConfirmation, setShowVoiceConfirmation] = useState(false);
 
+  // Estados para confirmación de gestos
+  const [pendingGestureCommand, setPendingGestureCommand] = useState(null);
+  const [showGestureConfirmation, setShowGestureConfirmation] = useState(false);
+
   const { success, error } = useAudioEngine();
   const voiceRecognition = useVoiceRecognition();
+  const gestureRecognition = useGestureRecognition();
 
   const q = useMemo(() => QUESTIONS[index], [index]);
 
@@ -390,6 +601,121 @@ export default function App() {
     }
   }, [voiceRecognition.transcript, voiceInputOn, selected, voiceOn, q, index]);
 
+  // Manejar activación/desactivación de cámara de gestos
+  useEffect(() => {
+    if (gestureInputOn && gestureRecognition.isSupported) {
+      console.log("🤚 Iniciando cámara para gestos...");
+      gestureRecognition.startCamera();
+    } else {
+      console.log("🤚 Deteniendo cámara de gestos...");
+      gestureRecognition.stopCamera();
+    }
+  }, [gestureInputOn, gestureRecognition.isSupported]);
+
+  // Procesar gestos detectados
+  useEffect(() => {
+    console.log("🤚 useEffect gestos - Estados:", {
+      gestureInputOn,
+      selected,
+      showGestureConfirmation,
+      detectedGesture: gestureRecognition.detectedGesture,
+      confidence: gestureRecognition.confidence,
+      isActive: gestureRecognition.isActive,
+    });
+
+    if (!gestureInputOn) {
+      console.log("🤚 Gestos desactivados");
+      return;
+    }
+
+    if (selected !== null) {
+      console.log("🤚 Ya hay una respuesta seleccionada:", selected);
+      return;
+    }
+
+    if (gestureRecognition.detectedGesture === null) {
+      console.log("🤚 No hay gesto detectado");
+      return;
+    }
+
+    console.log("🤚 Procesando gesto detectado:", {
+      gesture: gestureRecognition.detectedGesture,
+      confidence: gestureRecognition.confidence,
+    });
+
+    // Solo procesar si la confianza es alta
+    if (gestureRecognition.confidence > 0.8) {
+      console.log("🤚 ¡GESTO CONFIRMADO!");
+
+      // Si estamos en modo confirmación, verificar confirmación/cancelación
+      if (showGestureConfirmation) {
+        const fingerCount = gestureRecognition.detectedGesture;
+
+        // Puño cerrado (0 dedos) = Confirmar
+        if (fingerCount === 0) {
+          console.log("🤚 ¡PUÑO DETECTADO! Confirmando respuesta");
+          confirmGestureCommand();
+          return;
+        }
+
+        // Mano abierta (5 dedos) = Cancelar
+        if (fingerCount === 5) {
+          console.log("🤚 ¡MANO ABIERTA DETECTADA! Cancelando");
+          cancelGestureCommand();
+          return;
+        }
+
+        // Otros gestos durante confirmación se ignoran
+        console.log("🤚 Gesto no reconocido para confirmación:", fingerCount);
+        return;
+      }
+
+      // Si no hay confirmación pendiente, verificar gestos de selección
+      const fingerCount = gestureRecognition.detectedGesture;
+      let optionIndex = null;
+
+      // Mapear dedos a opciones: 1 dedo = A, 2 dedos = B, etc.
+      if (fingerCount === 1) optionIndex = 0; // A
+      else if (fingerCount === 2) optionIndex = 1; // B
+      else if (fingerCount === 3) optionIndex = 2; // C
+      else if (fingerCount === 4) optionIndex = 3; // D
+
+      if (optionIndex !== null && optionIndex < q.options.length) {
+        console.log(
+          `🤚 ${fingerCount} DEDO(S) DETECTADO! Opción ${
+            ["A", "B", "C", "D"][optionIndex]
+          }`
+        );
+
+        // Activar confirmación
+        setPendingGestureCommand(optionIndex);
+        setShowGestureConfirmation(true);
+
+        // Anunciar confirmación por voz
+        if (voiceOn) {
+          const optionLetter = ["A", "B", "C", "D"][optionIndex];
+          speak(
+            `¿Confirmas opción ${optionLetter}: ${q.options[optionIndex]}? Haz puño para confirmar o abre la mano para cancelar.`
+          );
+        }
+      } else {
+        console.log("🤚 Gesto no reconocido para selección:", fingerCount);
+      }
+    } else {
+      console.log("🤚 Confianza insuficiente:", gestureRecognition.confidence);
+    }
+  }, [
+    gestureRecognition.detectedGesture,
+    gestureRecognition.confidence,
+    gestureInputOn,
+    selected,
+    showGestureConfirmation,
+    pendingGestureCommand,
+    soundOn,
+    voiceOn,
+    q.options,
+  ]);
+
   // Confirmar comando de voz
   const confirmVoiceCommand = () => {
     if (pendingVoiceCommand !== null) {
@@ -408,10 +734,54 @@ export default function App() {
     }
   };
 
+  // Confirmar comando de gesto
+  const confirmGestureCommand = () => {
+    if (pendingGestureCommand !== null) {
+      console.log("🤚 Confirmando respuesta:", pendingGestureCommand);
+      handleAnswer(pendingGestureCommand);
+
+      // Feedback multisensorial
+      if (soundOn) {
+        console.log("🤚 Reproduciendo sonido de éxito");
+        success();
+      }
+      if (voiceOn) {
+        const optionLetter = ["A", "B", "C", "D"][pendingGestureCommand];
+        speak(`Respuesta ${optionLetter} confirmada`);
+      }
+
+      setPendingGestureCommand(null);
+      setShowGestureConfirmation(false);
+
+      // Pasar automáticamente a la siguiente pregunta después de un breve delay
+      setTimeout(() => {
+        if (index < QUESTIONS.length - 1) {
+          console.log("🤚 Pasando automáticamente a la siguiente pregunta");
+          next();
+        }
+      }, 2000); // 2 segundos de delay para que el usuario vea el resultado
+    }
+  };
+
+  // Cancelar comando de gesto
+  const cancelGestureCommand = () => {
+    console.log("🤚 Cancelando comando de gesto");
+    setPendingGestureCommand(null);
+    setShowGestureConfirmation(false);
+    if (voiceOn) {
+      speak("Gesto cancelado. Puedes intentar de nuevo.");
+    }
+  };
+
   // Limpiar selección/estado cuando cambia la pregunta
   useEffect(() => {
     setSelected(null);
     setShowResult(null);
+    // Limpiar estados de confirmación
+    setPendingVoiceCommand(null);
+    setShowVoiceConfirmation(false);
+    setPendingGestureCommand(null);
+    setShowGestureConfirmation(false);
   }, [index]);
 
   const handleAnswer = (optIdx) => {
@@ -446,9 +816,15 @@ export default function App() {
       setShowResult(null);
       setPendingVoiceCommand(null);
       setShowVoiceConfirmation(false);
+      setPendingGestureCommand(null);
+      setShowGestureConfirmation(false);
       // Limpiar el transcript de voz y detener reconocimiento
       voiceRecognition.stopListening();
       voiceRecognition.clearTranscript();
+      // NO detener la cámara de gestos aquí - que siga funcionando para la siguiente pregunta
+      // if (gestureRecognition.isActive) {
+      //   gestureRecognition.stopCamera();
+      // }
     }
   };
 
@@ -463,6 +839,10 @@ export default function App() {
     // Limpiar el transcript de voz y detener reconocimiento
     voiceRecognition.stopListening();
     voiceRecognition.clearTranscript();
+    // Detener cámara de gestos si está activa
+    if (gestureRecognition.isActive) {
+      gestureRecognition.stopCamera();
+    }
   };
 
   const finished = index === QUESTIONS.length - 1 && selected !== null;
@@ -526,6 +906,13 @@ export default function App() {
                 onChange={setVoiceInputOn}
               />
             )}
+            {gestureRecognition.isSupported && (
+              <ToggleSwitch
+                label="🤚 Gestos (PRUEBA)"
+                checked={gestureInputOn}
+                onChange={setGestureInputOn}
+              />
+            )}
           </div>
         </header>
 
@@ -569,6 +956,128 @@ export default function App() {
             onCancel={cancelVoiceCommand}
             className={styles.voiceConfirmationSection}
           />
+
+          {/* Confirmación de comando de gesto */}
+          <GestureConfirmation
+            show={showGestureConfirmation}
+            option={pendingGestureCommand}
+            optionText={
+              pendingGestureCommand !== null
+                ? q.options[pendingGestureCommand]
+                : ""
+            }
+            onConfirm={confirmGestureCommand}
+            onCancel={cancelGestureCommand}
+            className={styles.gestureConfirmationSection}
+          />
+
+          {/* Entrada por gestos - PRUEBA BÁSICA */}
+          {gestureInputOn && gestureRecognition.isSupported && (
+            <div className={styles.gestureSection}>
+              <h3 className={styles.gestureTitle}>
+                🤚 Detección de Gestos con MediaPipe
+              </h3>
+
+              {gestureRecognition.error && (
+                <div className={styles.gestureError}>
+                  ⚠️ {gestureRecognition.error}
+                </div>
+              )}
+
+              <div className={styles.cameraContainer}>
+                <video
+                  ref={gestureRecognition.videoRef}
+                  className={styles.gestureVideo}
+                  autoPlay
+                  muted
+                  playsInline
+                />
+                <canvas
+                  ref={gestureRecognition.canvasRef}
+                  className={styles.gestureCanvas}
+                  style={{ display: "none" }} // Oculto por ahora
+                />
+
+                <div className={styles.gestureOverlay}>
+                  <div className={styles.gestureStatus}>
+                    {gestureRecognition.isActive ? (
+                      <>
+                        <span className={styles.gestureIndicator}>
+                          🔴 MediaPipe Activo
+                        </span>
+                        {gestureRecognition.detectedGesture !== null ? (
+                          <div className={styles.gestureDetected}>
+                            <span>✋ Gesto: Opción A (1 dedo)</span>
+                            <span>
+                              Confianza:{" "}
+                              {Math.round(gestureRecognition.confidence * 100)}%
+                            </span>
+                            <span className={styles.fingersDebug}>
+                              Dedos:{" "}
+                              {gestureRecognition.fingersUp
+                                .map((up, i) =>
+                                  up
+                                    ? `${["👍", "👆", "🖕", "💍", "🤙"][i]}`
+                                    : "✋"
+                                )
+                                .join(" ")}
+                            </span>
+                          </div>
+                        ) : (
+                          <div className={styles.gestureWaiting}>
+                            <span>Muestra 1 dedo para Opción A</span>
+                            {gestureRecognition.fingersUp.length > 0 && (
+                              <span className={styles.fingersDebug}>
+                                Dedos actuales:{" "}
+                                {
+                                  gestureRecognition.fingersUp.filter(Boolean)
+                                    .length
+                                }
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <span className={styles.gestureInactive}>
+                        📷 Iniciando MediaPipe...
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.gestureInstructions}>
+                <p>
+                  <strong>Instrucciones:</strong>
+                </p>
+                <p>👆 Muestra 1 dedo para seleccionar la Opción A</p>
+                <p>
+                  <small>
+                    Usando MediaPipe Hands para detección real de gestos.
+                  </small>
+                </p>
+
+                {/* Botón de prueba manual */}
+                <button
+                  className={styles.testGestureButton}
+                  onClick={() => {
+                    console.log("🤚 Botón de prueba manual presionado");
+                    if (selected === null) {
+                      console.log("🤚 Simulando detección manual...");
+                      handleAnswer(0);
+                      if (soundOn) success();
+                      if (voiceOn)
+                        speak("Prueba manual: Opción A seleccionada");
+                    }
+                  }}
+                  disabled={selected !== null}
+                >
+                  🧪 Probar Selección Manual (Opción A)
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Opciones */}
           <div className={styles.optionsGrid}>
@@ -839,6 +1348,59 @@ function VoiceConfirmation({
             Detectaste: <strong>Opción {optionLetter}</strong>
           </p>
           <p className={styles.confirmationOption}>"{optionText}"</p>
+        </div>
+
+        <div className={styles.confirmationActions}>
+          <button
+            onClick={onConfirm}
+            className={`${styles.confirmButton} ${styles.primary}`}
+            autoFocus
+          >
+            ✓ Confirmar
+          </button>
+          <button
+            onClick={onCancel}
+            className={`${styles.confirmButton} ${styles.secondary}`}
+          >
+            ✗ Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GestureConfirmation({
+  show,
+  option,
+  optionText,
+  onConfirm,
+  onCancel,
+  className,
+}) {
+  if (!show) return null;
+
+  const optionLetter = ["A", "B", "C", "D"][option];
+
+  return (
+    <div className={`${styles.gestureConfirmation} ${className || ""}`}>
+      <div className={styles.confirmationCard}>
+        <div className={styles.confirmationHeader}>
+          <span className={styles.confirmationIcon}>🤚</span>
+          <h3 className={styles.confirmationTitle}>
+            Confirmar respuesta por gesto
+          </h3>
+        </div>
+
+        <div className={styles.confirmationContent}>
+          <p className={styles.confirmationText}>
+            Detectaste: <strong>Opción {optionLetter}</strong>
+          </p>
+          <p className={styles.confirmationOption}>"{optionText}"</p>
+          <p className={styles.gestureInstructions}>
+            🤜 Haz <strong>puño</strong> para confirmar | 🖐️{" "}
+            <strong>Abre la mano</strong> para cancelar
+          </p>
         </div>
 
         <div className={styles.confirmationActions}>

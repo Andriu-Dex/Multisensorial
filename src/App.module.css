@@ -1872,3 +1872,371 @@
   color: #e74c3c !important;
   text-shadow: none !important;
 }
+
+/* ==========================================
+   SECCIÓN DE RECONOCIMIENTO DE GESTOS
+   ========================================== */
+
+.gestureSection {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: rgba(0, 245, 255, 0.1);
+  border: 2px solid rgba(0, 245, 255, 0.3);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  text-align: center;
+}
+
+.gestureTitle {
+  margin: 0 0 1rem 0;
+  color: var(--accent-cyan);
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.gestureError {
+  background: rgba(255, 51, 102, 0.2);
+  border: 1px solid var(--error-color);
+  color: var(--error-color);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.cameraContainer {
+  position: relative;
+  display: inline-block;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  margin-bottom: 1rem;
+}
+
+.gestureVideo {
+  display: block;
+  width: 320px;
+  height: 240px;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+.gestureCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.gestureOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.8) 0%,
+    rgba(0, 0, 0, 0.4) 50%,
+    transparent 100%
+  );
+  padding: 1rem;
+  border-radius: 0 0 12px 12px;
+}
+
+.gestureStatus {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.gestureIndicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 245, 255, 0.2);
+  border: 1px solid var(--accent-cyan);
+  color: var(--accent-cyan);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.gestureDetected {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  color: var(--success-color);
+  font-weight: 600;
+  animation: gestureSuccess 0.6s ease;
+}
+
+@keyframes gestureSuccess {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.gestureWaiting {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  animation: gestureWait 2s ease-in-out infinite;
+}
+
+@keyframes gestureWait {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.gestureInactive {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+}
+
+.fingersDebug {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: monospace;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.gestureInstructions {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: left;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.gestureInstructions p {
+  margin: 0.5rem 0;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.gestureInstructions p:first-child {
+  margin-top: 0;
+  font-weight: 600;
+  color: var(--accent-cyan);
+}
+
+.gestureInstructions p:last-child {
+  margin-bottom: 0;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-style: italic;
+}
+
+.testGestureButton {
+  background: linear-gradient(135deg, var(--accent-orange), #d35400);
+  border: 2px solid var(--accent-orange);
+  color: white;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.testGestureButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d35400, var(--accent-orange));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(255, 133, 0, 0.3);
+}
+
+.testGestureButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ==========================================
+   ESTILOS DE GESTOS PARA MODO REDUCIDO
+   ========================================== */
+
+:global(.reducedMode) .gestureSection,
+.container:global(.reducedMode) .gestureSection {
+  background: rgba(127, 140, 141, 0.1) !important;
+  border-color: #7f8c8d !important;
+  backdrop-filter: none !important;
+}
+
+:global(.reducedMode) .gestureTitle,
+.container:global(.reducedMode) .gestureTitle {
+  color: #95a5a6 !important;
+}
+
+:global(.reducedMode) .gestureError,
+.container:global(.reducedMode) .gestureError {
+  background: rgba(231, 76, 60, 0.1) !important;
+  border-color: #e74c3c !important;
+  color: #e74c3c !important;
+}
+
+:global(.reducedMode) .cameraContainer,
+.container:global(.reducedMode) .cameraContainer {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
+:global(.reducedMode) .gestureIndicator,
+.container:global(.reducedMode) .gestureIndicator {
+  background: rgba(127, 140, 141, 0.2) !important;
+  border-color: #7f8c8d !important;
+  color: #bdc3c7 !important;
+}
+
+:global(.reducedMode) .gestureDetected,
+.container:global(.reducedMode) .gestureDetected {
+  color: #27ae60 !important;
+  animation: none !important;
+}
+
+:global(.reducedMode) .gestureWaiting,
+.container:global(.reducedMode) .gestureWaiting {
+  color: #bdc3c7 !important;
+  animation: none !important;
+}
+
+:global(.reducedMode) .gestureInactive,
+.container:global(.reducedMode) .gestureInactive {
+  color: #7f8c8d !important;
+}
+
+:global(.reducedMode) .gestureInstructions,
+.container:global(.reducedMode) .gestureInstructions {
+  background: rgba(52, 73, 94, 0.6) !important;
+  border-color: #7f8c8d !important;
+}
+
+:global(.reducedMode) .gestureInstructions p,
+.container:global(.reducedMode) .gestureInstructions p {
+  color: #bdc3c7 !important;
+}
+
+:global(.reducedMode) .gestureInstructions p:first-child,
+.container:global(.reducedMode) .gestureInstructions p:first-child {
+  color: #95a5a6 !important;
+}
+
+:global(.reducedMode) .testGestureButton,
+.container:global(.reducedMode) .testGestureButton {
+  background: linear-gradient(135deg, #e67e22, #d35400) !important;
+  border-color: #e67e22 !important;
+}
+
+:global(.reducedMode) .testGestureButton:hover:not(:disabled),
+.container:global(.reducedMode) .testGestureButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d35400, #e67e22) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3) !important;
+}
+
+/* ================================ */
+/* CONFIRMACIÓN DE GESTOS */
+/* ================================ */
+
+.gestureConfirmation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+.gestureInstructions {
+  margin: 1rem 0 0 0;
+  color: var(--accent-cyan);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+/* Modo reducido para confirmación de gestos */
+:global(.reducedMode) .gestureConfirmation,
+.container:global(.reducedMode) .gestureConfirmation {
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+/* ================================ */
+/* GESTURE CONFIRMATION STYLES */
+/* ================================ */
+
+.gestureConfirmation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001; /* Slightly higher than voice confirmation */
+  animation: fadeIn 0.3s ease;
+}
+
+.gestureInstructions {
+  margin: 1rem 0 0 0;
+  color: var(--accent-orange);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+  padding: 0.75rem;
+  background: rgba(230, 126, 34, 0.2);
+  border-radius: 8px;
+  border: 1px solid var(--accent-orange);
+}
+
+/* Override confirmationOption styling for gesture confirmation */
+.gestureConfirmation .confirmationOption {
+  background: rgba(230, 126, 34, 0.2);
+  border-color: var(--accent-orange);
+}
+
+/* Responsive design for gesture confirmation */
+:global(.reducedMode) .gestureConfirmation .confirmationCard,
+.container:global(.reducedMode) .gestureConfirmation .confirmationCard {
+  padding: 1.5rem !important;
+  max-width: 350px !important;
+}
+
+:global(.reducedMode) .gestureInstructions,
+.container:global(.reducedMode) .gestureInstructions {
+  font-size: 0.8rem !important;
+  padding: 0.5rem !important;
+}
