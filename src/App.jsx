@@ -75,6 +75,7 @@ function useVoiceRecognition() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [isSupported, setIsSupported] = useState(false);
+  const [shouldListen, setShouldListen] = useState(false); // Control para escucha continua
   const recognitionRef = useRef(null);
 
   useEffect(() => {
@@ -86,7 +87,7 @@ function useVoiceRecognition() {
       setIsSupported(true);
       const recognition = new SpeechRecognition();
 
-      recognition.continuous = false;
+      recognition.continuous = false; // Mantenemos false para controlar mejor el reinicio
       recognition.interimResults = true;
       recognition.lang = "es-ES";
       recognition.maxAlternatives = 1;
@@ -117,11 +118,37 @@ function useVoiceRecognition() {
       recognition.onerror = (event) => {
         console.error("❌ Error en reconocimiento de voz:", event.error);
         setIsListening(false);
+
+        // Si debería estar escuchando, reintentar después de un breve delay
+        if (shouldListen) {
+          setTimeout(() => {
+            if (shouldListen && recognitionRef.current) {
+              try {
+                recognitionRef.current.start();
+              } catch (error) {
+                console.log("Reintentando reconocimiento...");
+              }
+            }
+          }, 1000);
+        }
       };
 
       recognition.onend = () => {
         console.log("🎤 Reconocimiento de voz terminado");
         setIsListening(false);
+
+        // Si debería estar escuchando, reiniciar automáticamente
+        if (shouldListen) {
+          setTimeout(() => {
+            if (shouldListen && recognitionRef.current) {
+              try {
+                recognitionRef.current.start();
+              } catch (error) {
+                console.log("Reintentando reconocimiento...");
+              }
+            }
+          }, 100); // Pequeño delay para evitar conflictos
+        }
       };
 
       recognitionRef.current = recognition;
@@ -135,7 +162,30 @@ function useVoiceRecognition() {
         recognitionRef.current.abort();
       }
     };
-  }, []);
+  }, [shouldListen]);
+
+  // Effect para manejar inicio/parada automática basada en shouldListen
+  useEffect(() => {
+    if (!recognitionRef.current) return;
+
+    if (shouldListen && !isListening) {
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error("Error al iniciar reconocimiento:", error);
+      }
+    } else if (!shouldListen && isListening) {
+      recognitionRef.current.stop();
+    }
+  }, [shouldListen, isListening]);
+
+  const startContinuousListening = () => {
+    setShouldListen(true);
+  };
+
+  const stopContinuousListening = () => {
+    setShouldListen(false);
+  };
 
   const startListening = () => {
     if (recognitionRef.current && !isListening) {
@@ -221,8 +271,11 @@ function useVoiceRecognition() {
     isListening,
     transcript,
     isSupported,
+    shouldListen,
     startListening,
     stopListening,
+    startContinuousListening,
+    stopContinuousListening,
     clearTranscript,
     parseVoiceCommand,
   };
@@ -511,10 +564,39 @@ export default function App() {
   // Estado para modal de resultados finales
   const [showResultsModal, setShowResultsModal] = useState(false);
   const [resultsAlreadyShown, setResultsAlreadyShown] = useState(false);
+  const [triviaCompleted, setTriviaCompleted] = useState(false);
 
   const { success, error } = useAudioEngine();
   const voiceRecognition = useVoiceRecognition();
   const gestureRecognition = useGestureRecognition();
+
+  // Manejar el reconocimiento continuo de voz
+  useEffect(() => {
+    if (voiceInputOn) {
+      console.log("🎤 Iniciando reconocimiento continuo de voz");
+      voiceRecognition.startContinuousListening();
+    } else {
+      console.log("🎤 Deteniendo reconocimiento continuo de voz");
+      voiceRecognition.stopContinuousListening();
+    }
+
+    // Cleanup al cambiar de pregunta o desmontar
+    return () => {
+      if (!voiceInputOn) {
+        voiceRecognition.stopContinuousListening();
+      }
+    };
+  }, [voiceInputOn]);
+
+  // Desactivar voz automáticamente cuando se activa entrada por voz para evitar conflictos
+  useEffect(() => {
+    if (voiceInputOn && voiceOn) {
+      console.log(
+        "🔇 Desactivando voz automáticamente al activar entrada por voz"
+      );
+      setVoiceOn(false);
+    }
+  }, [voiceInputOn, voiceOn]);
 
   const q = useMemo(() => QUESTIONS[index], [index]);
 
@@ -557,8 +639,7 @@ export default function App() {
 
   // Procesar comandos de voz
   useEffect(() => {
-    if (!voiceInputOn || !voiceRecognition.transcript || selected !== null)
-      return;
+    if (!voiceInputOn || !voiceRecognition.transcript) return;
 
     const result = voiceRecognition.parseVoiceCommand(
       voiceRecognition.transcript
@@ -567,48 +648,92 @@ export default function App() {
     if (result.command !== null && result.confidence !== "none") {
       console.log("🎤 Comando detectado:", result);
 
-      // Comandos especiales
-      if (result.command === "repeat") {
-        if (voiceOn) {
-          speak(
-            `Pregunta ${index + 1}. ${q.q}. Opciones: ${q.options.join(", ")}.`
-          );
+      // Manejar comandos de confirmación cuando hay una respuesta pendiente
+      if (showVoiceConfirmation && pendingVoiceCommand !== null) {
+        if (result.command === "confirm") {
+          // Confirmar y procesar la respuesta
+          handleAnswer(pendingVoiceCommand);
+          setPendingVoiceCommand(null);
+          setShowVoiceConfirmation(false);
+          voiceRecognition.clearTranscript();
+
+          // Si no es la última pregunta, pasar automáticamente a la siguiente
+          if (index < QUESTIONS.length - 1) {
+            setTimeout(() => {
+              setIndex(index + 1);
+            }, 1500); // Delay para mostrar el resultado antes de avanzar
+          }
+          return;
+        } else if (result.command === "cancel") {
+          // Cancelar confirmación y limpiar
+          setPendingVoiceCommand(null);
+          setShowVoiceConfirmation(false);
+          voiceRecognition.clearTranscript();
+
+          if (voiceOn) {
+            speak("Respuesta cancelada. Puedes elegir otra opción.");
+          }
+          return;
         }
-        voiceRecognition.stopListening();
-        return;
       }
 
-      if (result.command === "next") {
-        if (selected !== null && index < QUESTIONS.length - 1) {
-          setIndex(index + 1);
+      // Si no hay confirmación pendiente, procesar comandos normales
+      if (!showVoiceConfirmation) {
+        // Comandos especiales
+        if (result.command === "repeat") {
+          if (voiceOn) {
+            speak(
+              `Pregunta ${index + 1}. ${q.q}. Opciones: ${q.options.join(
+                ", "
+              )}.`
+            );
+          }
+          voiceRecognition.clearTranscript();
+          return;
         }
-        voiceRecognition.stopListening();
-        return;
-      }
 
-      // Comandos de respuesta (números 0-3)
-      if (
-        typeof result.command === "number" &&
-        result.command >= 0 &&
-        result.command <= 3
-      ) {
-        // Detener reconocimiento y mostrar confirmación
-        voiceRecognition.stopListening();
-        setPendingVoiceCommand(result.command);
-        setShowVoiceConfirmation(true);
+        if (result.command === "next") {
+          if (selected !== null && index < QUESTIONS.length - 1) {
+            setIndex(index + 1);
+          }
+          voiceRecognition.clearTranscript();
+          return;
+        }
 
-        // Anunciar confirmación por voz
-        if (voiceOn) {
-          const optionLetter = ["A", "B", "C", "D"][result.command];
-          speak(
-            `¿Confirmas opción ${optionLetter}: ${
-              q.options[result.command]
-            }? Haz clic en confirmar o di "sí".`
-          );
+        // Comandos de respuesta (números 0-3) - solo si no hay respuesta ya seleccionada
+        if (
+          typeof result.command === "number" &&
+          result.command >= 0 &&
+          result.command <= 3 &&
+          selected === null
+        ) {
+          // Mostrar confirmación y limpiar transcript
+          setPendingVoiceCommand(result.command);
+          setShowVoiceConfirmation(true);
+          voiceRecognition.clearTranscript();
+
+          // Anunciar confirmación por voz
+          if (voiceOn) {
+            const optionLetter = ["A", "B", "C", "D"][result.command];
+            speak(
+              `¿Confirmas opción ${optionLetter}: ${
+                q.options[result.command]
+              }? Di "sí" para confirmar o "no" para cancelar.`
+            );
+          }
         }
       }
     }
-  }, [voiceRecognition.transcript, voiceInputOn, selected, voiceOn, q, index]);
+  }, [
+    voiceRecognition.transcript,
+    voiceInputOn,
+    selected,
+    voiceOn,
+    q,
+    index,
+    showVoiceConfirmation,
+    pendingVoiceCommand,
+  ]);
 
   // Manejar activación/desactivación de cámara de gestos
   useEffect(() => {
@@ -731,6 +856,14 @@ export default function App() {
       handleAnswer(pendingVoiceCommand);
       setPendingVoiceCommand(null);
       setShowVoiceConfirmation(false);
+      voiceRecognition.clearTranscript();
+
+      // Si no es la última pregunta, pasar automáticamente a la siguiente
+      if (index < QUESTIONS.length - 1) {
+        setTimeout(() => {
+          setIndex(index + 1);
+        }, 1500);
+      }
     }
   };
 
@@ -738,8 +871,9 @@ export default function App() {
   const cancelVoiceCommand = () => {
     setPendingVoiceCommand(null);
     setShowVoiceConfirmation(false);
+    voiceRecognition.clearTranscript();
     if (voiceOn) {
-      speak("Comando cancelado. Puedes intentar de nuevo.");
+      speak("Comando cancelado. Puedes elegir otra opción.");
     }
   };
 
@@ -782,8 +916,11 @@ export default function App() {
     }
   };
 
-  // Limpiar selección/estado cuando cambia la pregunta
+  // Limpiar selección/estado cuando cambia la pregunta (excepto cuando terminamos la trivia)
   useEffect(() => {
+    // No limpiar si acabamos de terminar la trivia
+    if (resultsAlreadyShown) return;
+
     setSelected(null);
     setShowResult(null);
     // Limpiar estados de confirmación
@@ -791,13 +928,22 @@ export default function App() {
     setShowVoiceConfirmation(false);
     setPendingGestureCommand(null);
     setShowGestureConfirmation(false);
-  }, [index]);
+  }, [index, resultsAlreadyShown]);
 
   // Detectar cuando termina la trivia y mostrar modal con resultados
   useEffect(() => {
-    const finished = index === QUESTIONS.length - 1 && selected !== null;
+    console.log("🔍 Debug trivia:", {
+      triviaCompleted,
+      index,
+      questionsLength: QUESTIONS.length,
+      selected,
+      showResult,
+      resultsAlreadyShown,
+    });
 
-    if (finished && !resultsAlreadyShown) {
+    if (triviaCompleted && !resultsAlreadyShown) {
+      console.log("✅ Activando modal de resultados finales");
+
       // Marcar que ya se mostraron los resultados para evitar que se abra repetidamente
       setResultsAlreadyShown(true);
 
@@ -832,7 +978,7 @@ export default function App() {
         }
       }, 1500); // 1.5 segundos de delay para que se muestre el resultado de la última pregunta
     }
-  }, [index, selected, score, voiceOn, resultsAlreadyShown]);
+  }, [triviaCompleted, score, voiceOn, resultsAlreadyShown]);
 
   const handleAnswer = (optIdx) => {
     if (selected !== null) return; // ya respondido
@@ -840,6 +986,13 @@ export default function App() {
     const isCorrect = optIdx === q.correct;
     setShowResult(isCorrect ? "ok" : "ko");
     if (isCorrect) setScore((s) => s + 1);
+
+    // Comprobar si es la última pregunta de la trivia
+    const isLastQuestion = index === QUESTIONS.length - 1;
+    if (isLastQuestion) {
+      console.log("🏁 Última pregunta respondida - Trivia completada");
+      setTriviaCompleted(true);
+    }
 
     // Feedback auditivo
     if (soundOn) {
@@ -889,6 +1042,7 @@ export default function App() {
     // Resetear estados del modal de resultados
     setShowResultsModal(false);
     setResultsAlreadyShown(false);
+    setTriviaCompleted(false);
     // Limpiar el transcript de voz y detener reconocimiento
     voiceRecognition.stopListening();
     voiceRecognition.clearTranscript();
@@ -898,7 +1052,7 @@ export default function App() {
     }
   };
 
-  const finished = index === QUESTIONS.length - 1 && selected !== null;
+  const finished = triviaCompleted || resultsAlreadyShown; // Trivia completada o resultados ya mostrados
 
   return (
     <div className={`${styles.container} ${reducedMode ? "reducedMode" : ""}`}>
@@ -951,7 +1105,12 @@ export default function App() {
               checked={vibrationOn}
               onChange={setVibrationOn}
             />
-            <ToggleSwitch label="Voz" checked={voiceOn} onChange={setVoiceOn} />
+            <ToggleSwitch
+              label="Voz"
+              checked={voiceOn}
+              onChange={setVoiceOn}
+              disabled={voiceInputOn}
+            />
             {voiceRecognition.isSupported && (
               <ToggleSwitch
                 label="🎤 Entrada por Voz"
@@ -991,8 +1150,7 @@ export default function App() {
             <VoiceMicrophone
               isListening={voiceRecognition.isListening}
               transcript={voiceRecognition.transcript}
-              onStartListening={voiceRecognition.startListening}
-              onStopListening={voiceRecognition.stopListening}
+              shouldListen={voiceRecognition.shouldListen}
               disabled={selected !== null}
               className={styles.voiceSection}
             />
@@ -1234,23 +1392,29 @@ export default function App() {
 // =====================
 // Subcomponentes
 // =====================
-function ToggleSwitch({ label, checked, onChange }) {
+function ToggleSwitch({ label, checked, onChange, disabled = false }) {
   const handleClick = () => {
-    console.log(`Toggle ${label}: ${checked} -> ${!checked}`);
-    onChange(!checked);
+    if (!disabled) {
+      console.log(`Toggle ${label}: ${checked} -> ${!checked}`);
+      onChange(!checked);
+    }
   };
 
   return (
-    <label className={styles.toggleLabel}>
+    <label
+      className={`${styles.toggleLabel} ${disabled ? styles.disabled : ""}`}
+    >
       <span>{label}</span>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
+        aria-disabled={disabled}
         onClick={handleClick}
+        disabled={disabled}
         className={`${styles.toggleSwitch} ${
           checked ? styles.active : styles.inactive
-        }`}
+        } ${disabled ? styles.disabled : ""}`}
       >
         <span
           className={`${styles.toggleKnob} ${
@@ -1265,30 +1429,30 @@ function ToggleSwitch({ label, checked, onChange }) {
 function VoiceMicrophone({
   isListening,
   transcript,
-  onStartListening,
-  onStopListening,
+  shouldListen,
   disabled,
   className,
 }) {
   return (
     <div className={`${styles.voiceMicrophone} ${className || ""}`}>
-      <button
-        onClick={isListening ? onStopListening : onStartListening}
-        disabled={disabled}
-        className={`${styles.micButton} ${
-          isListening ? styles.listening : styles.idle
+      {/* Indicador de estado activo */}
+      <div
+        className={`${styles.micIndicator} ${
+          shouldListen ? styles.active : styles.inactive
         }`}
-        aria-label={isListening ? "Parar escucha" : "Empezar a escuchar"}
       >
         <span className={styles.micIcon}>🎤</span>
-        {isListening && (
+        <span className={styles.statusText}>
+          {shouldListen ? "Modo Voz Activo" : "Modo Voz Inactivo"}
+        </span>
+        {shouldListen && (
           <span className={styles.listeningIndicator}>
             <span className={styles.pulse}></span>
             <span className={styles.pulse}></span>
             <span className={styles.pulse}></span>
           </span>
         )}
-      </button>
+      </div>
 
       {transcript && (
         <div className={styles.transcript}>
@@ -1297,9 +1461,11 @@ function VoiceMicrophone({
         </div>
       )}
 
-      {isListening && (
+      {shouldListen && (
         <div className={styles.listeningStatus}>
-          Escuchando... Diga "Opción A", "B", "C" o "D"
+          {isListening
+            ? "🎤 Escuchando... Diga 'Opción A', 'B', 'C' o 'D'"
+            : "🎤 Reconocimiento activo - Hable cuando esté listo"}
         </div>
       )}
     </div>
@@ -1333,6 +1499,10 @@ function VoiceConfirmation({
             Detectaste: <strong>Opción {optionLetter}</strong>
           </p>
           <p className={styles.confirmationOption}>"{optionText}"</p>
+          <p className={styles.voiceInstructions}>
+            Di <strong>"SÍ"</strong> para ACEPTAR o <strong>"NO"</strong> para
+            CANCELAR
+          </p>
         </div>
 
         <div className={styles.confirmationActions}>
